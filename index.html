@@ -1,0 +1,2829 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sheld! — AI Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+/* Motion Studies Design Tokens — No strokes, no drop shadows, sculpted surfaces */
+:root{
+  --stage:#000;
+  --card:#171717;
+  --surface:#262626;
+  --fill-1:rgba(255,255,255,.05);
+  --fill-2:rgba(255,255,255,.09);
+  --fill-3:rgba(255,255,255,.14);
+  --text:#fff;
+  --text-2:rgba(255,255,255,.78);
+  --muted:#9a9a9a;
+  --muted-2:#828282;
+  --chip-text:#b4b4b4;
+  --green:#34d17a;
+  --green-text:#3ce085;
+  --on-green:#04140a;
+  --red:#ff5a5f;
+  --inverse:#fff;
+  --on-inverse:#000;
+  --font:"Inter",-apple-system,BlinkMacSystemFont,"Helvetica Neue",Arial,sans-serif;
+  --mono:"JetBrains Mono",ui-monospace,"SF Mono",Consolas,monospace;
+  --r-card:28px;
+  --r-sheet:24px;
+  --r-panel:18px;
+  --r-tile:14px;
+  --r-row:12px;
+  --r-pill:999px;
+  color-scheme:dark;
+}
+[data-theme=light]{
+  --stage:#f5f5f7;
+  --card:#ffffff;
+  --surface:#e9e9ee;
+  --fill-1:rgba(0,0,0,.04);
+  --fill-2:rgba(0,0,0,.07);
+  --fill-3:rgba(0,0,0,.12);
+  --text:#0a0a0c;
+  --text-2:rgba(0,0,0,.78);
+  --muted:#6c6c70;
+  --muted-2:#8e8e93;
+  --chip-text:#48484a;
+  --inverse:#0a0a0c;
+  --on-inverse:#ffffff;
+  color-scheme:light;
+}
+
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{
+  background:var(--stage);color:var(--text);font-family:var(--font);
+  -webkit-font-smoothing:antialiased;overflow:hidden;
+  transition:background .45s ease,color .45s ease;
+}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer;outline:none}
+::selection{background:var(--inverse);color:var(--on-inverse)}
+
+/* Grainy Mesh Avatars */
+[data-av]{
+  background:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='140' height='140'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/><feColorMatrix values='0 0 0 0 .5 0 0 0 0 .5 0 0 0 0 .5 0 0 0 .6 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>"),
+  radial-gradient(70% 70% at var(--p1),var(--av-l) 0,transparent 70%),
+  radial-gradient(60% 60% at var(--p2),var(--av-p) 0,transparent 70%),
+  radial-gradient(75% 75% at var(--p3),var(--av-b) 0,transparent 72%),var(--av-a)!important;
+  background-blend-mode:overlay,normal,normal,normal,normal!important;
+}
+[data-av="1"]{--av-l:#ff8fd0;--av-a:#ff3fa6;--av-b:#6a35ff;--av-p:#ffd3ec;--p1:12% 10%;--p2:92% 8%;--p3:88% 96%}
+[data-av="2"]{--av-l:#7fe3ff;--av-a:#2b8cff;--av-b:#5a35ff;--av-p:#cdf3ff;--p1:102% 65%;--p2:34% 107%;--p3:-5% 29%}
+[data-av="6"]{--av-l:#7dffea;--av-a:#1fa8ff;--av-b:#3a3cff;--av-p:#c9fff5;--p1:90% 12%;--p2:92% 92%;--p3:4% 88%}
+[data-av="7"]{--av-l:#ffd3f1;--av-a:#c07bff;--av-b:#ff4f9a;--av-p:#f0dcff;--p1:62% 103%;--p2:-7% 65%;--p3:40% -8%}
+
+.stage{position:relative;height:100%;width:100%;display:flex;flex-direction:column;background:var(--stage)}
+
+/* Floating Top Bar */
+.topbar{
+  position:relative;z-index:20;display:flex;align-items:center;justify-content:space-between;
+  padding:14px 20px 8px;flex:none;pointer-events:none;
+}
+.topbar > *{pointer-events:auto}
+
+.brand-group{display:flex;align-items:center;gap:8px;position:relative}
+.model-pill{
+  height:38px;padding:0 14px 0 10px;border-radius:var(--r-pill);
+  background:var(--card);display:flex;align-items:center;gap:9px;
+  font-size:13px;font-weight:500;color:var(--text);
+  transition:background .2s ease,transform .2s ease;
+}
+.model-pill:hover{background:var(--surface)}
+.model-pill:active{transform:scale(.96)}
+.orb{width:20px;height:20px;border-radius:50%;flex:none}
+.model-pill .price-tag{
+  font-size:11px;font-weight:400;color:var(--muted-2);letter-spacing:0;
+  transition:color .25s ease;
+}
+.model-pill .chev{width:14px;height:14px;color:var(--muted);transition:transform .35s cubic-bezier(.34,1.5,.64,1)}
+.model-pill[aria-expanded="true"] .chev{transform:rotate(180deg)}
+
+/* Model Popover */
+.model-menu{
+  position:absolute;left:0;top:46px;width:330px;padding:6px;border-radius:var(--r-panel);
+  background:var(--card);transform-origin:top left;
+  opacity:0;transform:scale(.92) translateY(-6px);pointer-events:none;
+  transition:opacity .22s ease,transform .38s cubic-bezier(.22,1.2,.36,1);
+}
+.model-menu.open{opacity:1;transform:none;pointer-events:auto}
+.m-opt{
+  width:100%;display:flex;align-items:center;gap:11px;padding:10px 12px;border-radius:var(--r-row);
+  text-align:left;transition:background .15s ease;
+}
+.m-opt:hover,.m-opt.on{background:var(--fill-2)}
+.m-opt .info{flex:1;min-width:0}
+.m-opt b{display:block;font-size:13.5px;font-weight:500;color:var(--text)}
+.m-opt small{display:block;font-size:11px;color:var(--muted-2);margin-top:1px}
+.m-opt .m-price{
+  font-size:11px;font-weight:400;color:var(--muted-2);white-space:nowrap;
+}
+
+/* Top Right Actions */
+.top-actions{display:flex;align-items:center;gap:8px;position:relative}
+.icon-pill{
+  width:38px;height:38px;border-radius:50%;background:var(--card);color:var(--muted);
+  display:grid;place-items:center;transition:background .2s,color .2s,transform .2s;
+}
+.icon-pill:hover{background:var(--surface);color:var(--text)}
+.icon-pill:active{transform:scale(.92)}
+.icon-pill svg{width:17px;height:17px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+
+.hist-trig{
+  height:38px;padding:0 14px 0 12px;border-radius:var(--r-pill);background:var(--card);
+  display:flex;align-items:center;gap:7px;font-size:13px;font-weight:500;color:var(--text-2);
+  transition:background .2s,color .2s,transform .2s;
+}
+.hist-trig:hover{background:var(--surface);color:var(--text)}
+.hist-trig:active{transform:scale(.95)}
+.hist-trig svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+
+/* Chat History Popover (DesignBookmark Motion Studies) */
+.hist-menu{
+  position:absolute;right:0;top:46px;width:320px;max-height:400px;padding:8px;border-radius:var(--r-panel);
+  background:var(--card);transform-origin:top right;display:flex;flex-direction:column;gap:4px;
+  opacity:0;transform:scale(.92) translateY(-6px);pointer-events:none;z-index:30;
+  transition:opacity .22s ease,transform .38s cubic-bezier(.22,1.2,.36,1);
+}
+.hist-menu.open{opacity:1;transform:none;pointer-events:auto}
+.hist-head{display:flex;align-items:center;justify-content:space-between;padding:4px 8px 6px}
+.hist-head span{font-size:11.5px;font-weight:600;letter-spacing:.02em;color:var(--muted)}
+.hist-clear{
+  font-size:11.5px;font-weight:500;color:var(--muted-2);padding:3px 8px;border-radius:var(--r-pill);
+  transition:background .15s,color .15s;
+}
+.hist-clear:hover{background:var(--fill-2);color:var(--text)}
+.hist-list{overflow-y:auto;display:flex;flex-direction:column;gap:2px;max-height:332px}
+.hist-list::-webkit-scrollbar{width:4px}
+.hist-list::-webkit-scrollbar-thumb{background:var(--fill-2);border-radius:99px}
+.hist-empty{padding:24px 12px;text-align:center;font-size:12.5px;color:var(--muted-2)}
+.hist-row{
+  position:relative;display:flex;align-items:center;gap:10px;padding:9px 32px 9px 10px;
+  border-radius:var(--r-row);cursor:pointer;text-align:left;transition:background .15s ease;
+}
+.hist-row:hover,.hist-row.on{background:var(--fill-2)}
+.hist-info{flex:1;min-width:0}
+.hist-info b{display:block;font-size:13px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.hist-info small{display:block;font-size:11px;color:var(--muted-2);margin-top:1px}
+.hist-del{
+  position:absolute;right:6px;top:50%;transform:translateY(-50%);width:22px;height:22px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;color:var(--muted-2);opacity:0;
+  transition:opacity .15s,background .15s,color .15s;
+}
+.hist-del svg{width:11px;height:11px;fill:none;stroke:currentColor;stroke-width:2.3;stroke-linecap:round}
+.hist-row:hover .hist-del{opacity:1}
+.hist-del:hover{background:var(--fill-3);color:var(--text)}
+
+/* Scrollable Chat Canvas */
+.chat-scroll{flex:1;overflow-y:auto;padding:12px 20px 24px;display:flex;flex-direction:column;scroll-behavior:smooth}
+.chat-scroll::-webkit-scrollbar{width:5px}
+.chat-scroll::-webkit-scrollbar-thumb{background:var(--fill-2);border-radius:99px}
+.chat-col{width:100%;max-width:680px;margin:0 auto;flex:1;display:flex;flex-direction:column}
+
+/* Hero Empty State */
+.hero{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;padding:24px 0 40px}
+.started .hero{display:none}
+.hero-orb{width:48px;height:48px;border-radius:50%;margin-bottom:22px;animation:orbFloat 5s ease-in-out infinite}
+@keyframes orbFloat{0%,100%{transform:translateY(0) scale(1)}50%{transform:translateY(-6px) scale(1.04)}}
+
+.roll{
+  display:flex;align-items:center;justify-content:center;gap:.25em;
+  font-size:clamp(30px,5.2vw,48px);font-weight:600;letter-spacing:-.035em;line-height:1.25;
+  cursor:pointer;user-select:none;
+}
+.roll .lead{color:var(--muted)}
+.roll .slot{position:relative;display:block;height:1.25em;color:var(--text);clip-path:inset(0 -.5em)}
+.roll .word{position:absolute;left:0;top:0;display:flex}
+.roll .ch{display:inline-block;white-space:pre;will-change:transform,opacity}
+
+.wave-sub{margin-top:12px;font-size:15px;color:var(--muted);letter-spacing:-.01em;user-select:none;cursor:default}
+.wave-sub .wch{display:inline-block;white-space:pre;font-weight:350}
+
+.chips{margin-top:32px;display:flex;flex-wrap:wrap;justify-content:center;gap:8px;max-width:560px}
+.chip-btn{
+  padding:9px 15px;border-radius:var(--r-pill);background:var(--fill-1);
+  color:var(--text-2);font-size:13px;font-weight:500;
+  transition:background .2s,color .2s,transform .35s cubic-bezier(.34,1.5,.64,1);
+}
+.chip-btn:hover{background:var(--fill-2);color:var(--text);transform:translateY(-2px)}
+.chip-btn:active{transform:scale(.95)}
+
+/* Messages Stream */
+.msgs{display:flex;flex-direction:column;gap:18px;padding-bottom:16px}
+.msg-row{display:flex;flex-direction:column;gap:6px;width:100%}
+.msg-row.user{align-items:flex-end}
+.msg-row.ai{align-items:flex-start}
+
+.u-atts{display:flex;flex-wrap:wrap;justify-content:flex-end;gap:8px;max-width:82%;will-change:transform,opacity}
+.u-img{
+  width:184px;max-height:142px;border-radius:16px;object-fit:cover;cursor:zoom-in;
+  background:var(--card);transition:transform .28s cubic-bezier(.34,1.5,.64,1);
+}
+.u-img:hover{transform:scale(1.025)}
+.u-file{
+  display:inline-flex;align-items:center;gap:8px;padding:7px 12px 7px 8px;
+  border-radius:14px;background:var(--surface);color:var(--text-2);font-size:12.5px;
+}
+.u-file-ext{
+  padding:3px 6px;border-radius:7px;background:var(--fill-2);color:var(--text);
+  font:600 10px var(--mono);text-transform:uppercase;
+}
+.u-file small{font-size:11px;color:var(--muted-2)}
+
+.u-bubble{
+  max-width:82%;padding:11px 16px;border-radius:20px;
+  background:var(--inverse);color:var(--on-inverse);
+  font-size:15px;line-height:22px;font-weight:500;will-change:transform,opacity;
+}
+
+.ai-head{display:flex;align-items:center;gap:8px;padding-left:4px;font-size:12px;font-weight:500;color:var(--muted)}
+.ai-head .mini-orb{width:16px;height:16px;border-radius:50%}
+
+/* Morphing Goo -> Reply Container (Fixed vertical centering!) */
+.ai-bubble{
+  position:relative;overflow:hidden;border-radius:22px;
+  background:var(--card);color:var(--text);
+  will-change:width,height,transform,opacity;
+}
+.goo-layer{position:absolute;left:0;top:0;width:64px;height:42px;filter:url(#dotgoo);pointer-events:none}
+.goo-layer i{position:absolute;left:0;top:0;width:9px;height:9px;border-radius:50%;background:var(--text-2);will-change:transform}
+.think-label{
+  position:absolute;left:60px;top:0;height:42px;
+  display:flex;align-items:center;white-space:nowrap;
+  font-size:13.5px;line-height:1;font-weight:500;
+  background:linear-gradient(90deg,var(--muted-2) 20%,var(--text) 50%,var(--muted-2) 80%) 0 0/200% 100%;
+  -webkit-background-clip:text;background-clip:text;color:transparent;
+  animation:shine 1.4s linear infinite;pointer-events:none;
+}
+@keyframes shine{to{background-position:-200% 0}}
+
+.reply-inner{padding:12px 18px;font-size:15px;line-height:22px;color:var(--text);word-break:break-word}
+.reply-text .wd{display:inline-block;will-change:transform,opacity,filter}
+.reply-text p{margin:0 0 8px}
+.reply-text p:last-child{margin-bottom:0}
+.reply-text strong,.reply-text b{font-weight:650;color:var(--text)}
+.reply-text em{font-style:italic}
+.reply-text code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:13px;background:var(--fill-1);padding:1px 5px;border-radius:5px}
+.reply-text pre{margin:8px 0;padding:10px 12px;border-radius:10px;background:var(--fill-1);overflow-x:auto;font-size:13px;line-height:1.45}
+.reply-text pre code{background:none;padding:0}
+.reply-text ul,.reply-text ol{margin:6px 0 8px;padding-left:20px}
+.reply-text li{margin:2px 0}
+.reply-text h1,.reply-text h2,.reply-text h3{margin:10px 0 6px;font-size:15px;font-weight:650;line-height:1.35}
+.reply-text h1:first-child,.reply-text h2:first-child,.reply-text h3:first-child{margin-top:0}
+.reply-text a{color:var(--text);text-decoration:underline;text-underline-offset:2px}
+
+/* Flagship Agent Thinking & File-Edit Inspector */
+.agent-trace{
+  width:100%;max-width:620px;border-radius:18px;background:var(--card);
+  border:1px solid var(--fill-1);overflow:hidden;margin-bottom:2px;
+  transition:border-color .22s ease,background .22s ease;
+}
+.at-head{
+  display:flex;align-items:center;gap:9px;padding:9px 13px;cursor:pointer;user-select:none;
+  font-size:12.5px;color:var(--text-2);transition:background .18s ease;
+}
+.at-head:hover{background:var(--fill-1)}
+.at-ico{
+  width:15px;height:15px;flex:none;display:inline-flex;align-items:center;justify-content:center;color:var(--text);
+}
+.at-spin{
+  width:12px;height:12px;border-radius:50%;
+  border:1.8px solid var(--fill-3);border-top-color:var(--text);
+  animation:atSpin .78s linear infinite;
+}
+@keyframes atSpin{to{transform:rotate(360deg)}}
+.agent-trace.done .at-spin{display:none}
+.at-check{display:none;width:14px;height:14px;fill:none;stroke:var(--green);stroke-width:2.3;stroke-linecap:round;stroke-linejoin:round}
+.agent-trace.done .at-check{display:block}
+.at-title{font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.at-meta{margin-left:auto;display:flex;align-items:center;gap:7px;flex:none}
+.at-badge{
+  padding:2px 8px;border-radius:var(--r-pill);background:var(--fill-2);
+  font:500 11px var(--mono);color:var(--green);
+}
+.at-chev{width:13px;height:13px;fill:none;stroke:var(--muted);stroke-width:2;stroke-linecap:round;transition:transform .28s cubic-bezier(.22,1,.36,1)}
+.agent-trace.open .at-chev{transform:rotate(180deg)}
+
+.at-body{display:grid;grid-template-rows:0fr;transition:grid-template-rows .32s cubic-bezier(.22,1,.36,1)}
+.agent-trace.open .at-body{grid-template-rows:1fr}
+.at-body-in{min-height:0;overflow:hidden}
+.at-content{padding:2px 13px 12px;display:flex;flex-direction:column;gap:9px;border-top:1px solid var(--fill-1)}
+
+.at-steps{display:flex;flex-direction:column;gap:5px;padding-top:8px}
+.at-step{display:flex;align-items:center;gap:8px;font-size:12px;line-height:1.4;color:var(--muted)}
+.at-step.active{color:var(--text)}
+.at-step-dot{
+  width:13px;height:13px;flex:none;display:inline-flex;align-items:center;justify-content:center;
+}
+.at-step.active .at-step-dot::before{
+  content:'';width:6px;height:6px;border-radius:50%;background:var(--text);
+  box-shadow:0 0 0 3px var(--fill-2);animation:pulseDot 1.2s ease-in-out infinite;
+}
+@keyframes pulseDot{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.5;transform:scale(.85)}}
+.at-step.done .at-step-dot::before{content:'✓';font-size:10.5px;font-weight:700;color:var(--green)}
+.at-step.warn .at-step-dot::before{content:'!';font-size:10.5px;font-weight:700;color:#fbbf24}
+.at-step-txt{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.at-step-tag{
+  margin-left:auto;flex:none;padding:1px 7px;border-radius:var(--r-pill);
+  background:var(--fill-1);font:500 10.5px var(--mono);color:var(--muted);max-width:210px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+}
+
+.at-thought-box{
+  display:none;flex-direction:column;gap:4px;padding:8px 10px;border-radius:12px;
+  background:var(--fill-1);
+}
+.at-thought-box.show{display:flex}
+.at-sub{font-size:10px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--muted-2)}
+.at-thought{
+  max-height:108px;overflow-y:auto;font:400 12px/1.48 var(--font);color:var(--muted);
+  white-space:pre-wrap;word-break:break-word;
+}
+.at-thought::-webkit-scrollbar,.at-edit-code::-webkit-scrollbar{width:4px;height:4px}
+.at-thought::-webkit-scrollbar-thumb,.at-edit-code::-webkit-scrollbar-thumb{background:var(--fill-3);border-radius:99px}
+
+.at-edits{display:none;flex-direction:column;gap:7px}
+.at-edits.show{display:flex}
+.at-edit{border-radius:12px;background:var(--surface);border:1px solid var(--fill-1);overflow:hidden;transition:border-color .2s}
+.at-edit.writing{border-color:rgba(52,209,122,.45)}
+.at-edit-head{
+  display:flex;align-items:center;gap:7px;padding:7px 10px;font-size:12px;color:var(--text);cursor:pointer;user-select:none;
+}
+.at-edit-op{
+  padding:1px 6px;border-radius:6px;background:var(--fill-2);
+  font:600 10px var(--mono);text-transform:uppercase;color:var(--text-2);
+}
+.at-edit-op.edit{color:#fbbf24}
+.at-edit-op.done{color:var(--green-text);background:rgba(52,209,122,.14)}
+.at-edit-name{font:500 12px var(--mono);color:var(--text)}
+.at-edit-stat{margin-left:auto;font:600 11px var(--mono);color:var(--green);display:flex;align-items:center;gap:6px}
+.at-edit-stat small{font-weight:400;color:var(--muted-2)}
+.at-edit-code{
+  max-height:122px;overflow-y:auto;padding:7px 10px;margin:0;
+  border-top:1px solid var(--fill-1);background:var(--stage);
+  font:400 11.5px/1.45 var(--mono);color:var(--text-2);white-space:pre;
+}
+.at-edit.collapsed .at-edit-code{display:none!important}
+.at-edit-line{display:block;padding-left:10px;border-left:2px solid rgba(52,199,89,.65)}
+
+/* File Attachment Cards inside Chat Bubble */
+.files-wrap{
+  margin-top:12px;display:none;flex-direction:column;gap:10px;
+  opacity:0;transform:translateY(10px) scale(.97);
+  transition:opacity .45s ease,transform .55s cubic-bezier(.16,1,.3,1);
+}
+.files-wrap.has-files{display:flex}
+.files-wrap.show{display:flex;opacity:1;transform:none}
+
+.file-card{border-radius:var(--r-panel);background:var(--fill-1);overflow:hidden}
+.file-top{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 12px;background:var(--fill-1)}
+.file-meta{display:flex;align-items:center;gap:10px;min-width:0}
+.file-ico{
+  width:32px;height:32px;border-radius:10px;background:var(--fill-2);
+  display:grid;place-items:center;flex:none;color:var(--text);
+}
+.file-ico svg{width:16px;height:16px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.file-names{min-width:0}
+.file-names b{display:block;font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.file-names small{display:block;font-size:11px;color:var(--muted)}
+
+.file-btns{display:flex;align-items:center;gap:6px;flex:none}
+.pill-sm{
+  height:28px;padding:0 11px;border-radius:var(--r-pill);font-size:12px;font-weight:500;
+  background:var(--fill-2);color:var(--text-2);display:inline-flex;align-items:center;gap:5px;
+  transition:background .2s,color .2s,transform .25s cubic-bezier(.34,1.5,.64,1);
+}
+.pill-sm:hover{background:var(--fill-3);color:var(--text)}
+.pill-sm.ok{background:var(--green);color:var(--on-green)}
+.pill-dl{
+  height:28px;padding:0 13px;border-radius:var(--r-pill);font-size:12px;font-weight:600;
+  background:var(--inverse);color:var(--on-inverse);display:inline-flex;align-items:center;gap:5px;
+  transition:background .2s,color .2s;will-change:transform;
+}
+.pill-dl.ok{background:var(--green);color:var(--on-green)}
+.file-code{
+  display:none;padding:12px 14px;font:12px/1.65 var(--mono);color:var(--muted);
+  overflow:auto;max-height:220px;white-space:pre;
+}
+.file-card.expanded .file-code{display:block}
+
+/* Floating Prompt Box Dock */
+.dock-wrap{flex:none;padding:6px 20px 20px;display:flex;flex-direction:column;align-items:center}
+.pb{width:min(680px,100%);padding:12px 12px 10px 18px;background:var(--surface);border-radius:26px;transition:background .3s ease}
+.pb-status{display:flex;align-items:center;gap:8px;height:0;overflow:hidden;font-size:12.5px;font-weight:500;color:var(--muted)}
+.pb-status .mark{width:7px;height:7px;border-radius:50%;background:var(--text);flex:none;transition:background .25s ease}
+.pb-status.think .mark{animation:pulse 1s ease-in-out infinite}
+.pb-status.think .label{
+  background:linear-gradient(90deg,var(--muted-2) 20%,var(--text) 50%,var(--muted-2) 80%) 0 0/200% 100%;
+  -webkit-background-clip:text;background-clip:text;color:transparent;animation:shine 1.4s linear infinite;
+}
+.pb-status.done .mark{background:var(--green)}
+.pb-status.done .label{color:var(--text-2)}
+@keyframes pulse{50%{transform:scale(.55);opacity:.45}}
+
+.pb-row{display:flex;align-items:flex-end;gap:10px}
+#field{
+  flex:1;min-width:0;height:24px;margin:4px 0 6px;padding:0;border:0;outline:none;
+  resize:none;overflow:hidden;background:none;color:var(--text);
+  font:400 15px/24px var(--font);caret-color:var(--text);
+}
+#field::placeholder{color:var(--muted-2)}
+
+.pb.drag{background:var(--fill-3)}
+
+/* Pending Attachments Tray inside Prompt Box */
+.att-tray{display:none;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+.att-tray.show{display:flex}
+.att-chip{
+  position:relative;display:flex;align-items:center;gap:8px;max-width:210px;
+  padding:5px 28px 5px 6px;border-radius:14px;background:var(--fill-2);
+  animation:attIn .32s cubic-bezier(.22,1.25,.36,1) both;
+}
+@keyframes attIn{from{opacity:0;transform:scale(.9) translateY(6px)}to{opacity:1;transform:none}}
+.att-thumb{width:32px;height:32px;border-radius:9px;object-fit:cover;flex:none;background:var(--fill-3)}
+.att-ext{
+  width:32px;height:32px;border-radius:9px;background:var(--fill-3);color:var(--text);
+  display:grid;place-items:center;font:600 9.5px var(--mono);flex:none;text-transform:uppercase;
+}
+.att-meta{min-width:0}
+.att-meta b{display:block;font-size:12px;font-weight:500;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.att-meta small{display:block;font-size:10.5px;color:var(--muted-2)}
+.att-rm{
+  position:absolute;right:6px;top:50%;transform:translateY(-50%);width:20px;height:20px;border-radius:50%;
+  background:var(--fill-2);color:var(--muted);display:flex;align-items:center;justify-content:center;
+  transition:background .15s,color .15s;
+}
+.att-rm svg{width:10px;height:10px;fill:none;stroke:currentColor;stroke-width:2.3;stroke-linecap:round}
+.att-rm:hover{background:var(--fill-3);color:var(--text)}
+
+.pb-bar{display:flex;align-items:center;justify-content:flex-start;gap:8px;margin-top:6px;padding-top:4px}
+.attach-btn{
+  height:30px;padding:0 12px 0 10px;border-radius:var(--r-pill);
+  background:var(--fill-1);color:var(--muted);
+  display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:500;
+  transition:background .22s ease,color .22s ease,transform .25s cubic-bezier(.34,1.5,.64,1);
+}
+.attach-btn:hover{background:var(--fill-2);color:var(--text)}
+.attach-btn:active{transform:scale(.93)}
+.attach-btn svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+
+.think-toggle{
+  position:relative;height:30px;padding:0 13px 0 11px;border-radius:var(--r-pill);
+  background:var(--fill-1);color:var(--muted);
+  display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:500;
+  transition:background .28s ease,color .28s ease;will-change:transform;
+}
+.think-toggle:hover{background:var(--fill-2);color:var(--text-2)}
+.think-toggle.on{background:var(--inverse);color:var(--on-inverse)}
+.think-toggle.on:hover{background:var(--inverse);color:var(--on-inverse)}
+.think-toggle .tk-ico{
+  width:14px;height:14px;display:grid;place-items:center;flex:none;will-change:transform;
+}
+.think-toggle .tk-ico svg{
+  width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;
+}
+
+.send{
+  position:relative;flex:none;width:36px;height:36px;border-radius:50%;
+  background:var(--fill-3);color:var(--muted);
+  transition:background .2s ease,color .2s ease;will-change:transform;
+}
+.send.ready{background:var(--inverse);color:var(--on-inverse)}
+.send i{position:absolute;inset:0;display:grid;place-items:center;will-change:transform}
+.send .arrow svg{width:17px;height:17px}
+.send .stop::after{content:"";width:10px;height:10px;border-radius:2.5px;background:currentColor}
+
+/* Image Lightbox Preview */
+.img-lb{
+  position:fixed;inset:0;background:rgba(0,0,0,.78);backdrop-filter:blur(12px);
+  display:grid;place-items:center;padding:24px;opacity:0;pointer-events:none;
+  transition:opacity .24s ease;z-index:80;cursor:zoom-out;
+}
+.img-lb.show{opacity:1;pointer-events:auto}
+.img-lb img{
+  max-width:min(90vw,860px);max-height:84vh;border-radius:20px;object-fit:contain;
+  transform:scale(.94);transition:transform .38s cubic-bezier(.22,1.2,.36,1);
+}
+.img-lb.show img{transform:none}
+
+/* Auth & Paywall Gate Sheet (DesignBookmark Motion Studies) */
+.gate-ov{
+  position:fixed;inset:0;background:rgba(0,0,0,.68);backdrop-filter:blur(14px);
+  display:grid;place-items:center;padding:20px;
+  opacity:0;pointer-events:none;transition:opacity .28s ease;z-index:70;
+}
+.gate-ov.show{opacity:1;pointer-events:auto}
+.gate-card{
+  position:relative;width:min(400px,100%);border-radius:var(--r-card);background:var(--card);
+  padding:28px 24px 24px;overflow:hidden;
+  transform:scale(.92) translateY(18px);transition:transform .52s cubic-bezier(.22,1.25,.36,1);
+}
+.gate-ov.show .gate-card{transform:none}
+.gate-close{
+  position:absolute;right:16px;top:16px;width:32px;height:32px;border-radius:50%;
+  background:var(--fill-1);color:var(--muted);display:grid;place-items:center;
+  transition:background .2s,color .2s,transform .2s;
+}
+.gate-close:hover{background:var(--fill-2);color:var(--text)}
+.gate-close:active{transform:scale(.9)}
+.gate-close svg{width:15px;height:15px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round}
+
+.gate-step{display:none;flex-direction:column;align-items:center;text-align:center}
+.gate-step.on{display:flex;animation:stepIn .46s cubic-bezier(.16,1,.3,1) both}
+@keyframes stepIn{from{opacity:0;transform:translateY(12px) scale(.97);filter:blur(4px)}to{opacity:1;transform:none;filter:none}}
+
+.gate-orb{width:44px;height:44px;border-radius:50%;margin-bottom:16px}
+.gate-title{font-size:21px;font-weight:600;letter-spacing:-.03em;color:var(--text)}
+.gate-sub{margin-top:6px;font-size:13.5px;line-height:1.45;color:var(--muted);max-width:300px}
+
+.oauth-col{width:100%;display:flex;flex-direction:column;gap:8px;margin-top:22px}
+.oauth-btn{
+  width:100%;height:44px;border-radius:var(--r-pill);background:var(--fill-1);
+  color:var(--text-2);font-size:13.5px;font-weight:500;
+  display:flex;align-items:center;justify-content:center;gap:10px;
+  transition:background .2s,color .2s,transform .2s;
+}
+.oauth-btn:hover{background:var(--fill-2);color:var(--text)}
+.oauth-btn:active{transform:scale(.97)}
+.oauth-btn svg{width:16px;height:16px;fill:currentColor}
+.gate-div{
+  width:100%;display:flex;align-items:center;gap:10px;margin:14px 0;
+  font-size:11.5px;color:var(--muted-2);
+}
+.gate-div::before,.gate-div::after{content:"";flex:1;height:1px;background:var(--fill-2)}
+.gate-hint{
+  min-height:18px;margin-top:10px;font-size:12px;color:#ff5a5f;
+  opacity:0;transform:translateY(-4px);transition:opacity .25s,transform .25s;
+}
+.gate-hint.show{opacity:1;transform:none}
+
+/* Real Apple ID & Card Checkout Forms inside Gate */
+.sub-form{
+  width:100%;display:none;flex-direction:column;gap:8px;margin-top:12px;
+  animation:stepIn .38s cubic-bezier(.16,1,.3,1) both;
+}
+.sub-form.open{display:flex}
+.sub-form.shake{animation:shakeX .42s ease}
+@keyframes shakeX{0%,100%{transform:none}20%{transform:translateX(-6px)}40%{transform:translateX(6px)}60%{transform:translateX(-4px)}80%{transform:translateX(3px)}}
+
+.g-inp{
+  width:100%;height:42px;padding:0 14px;border-radius:var(--r-tile);
+  background:var(--fill-1);border:0;outline:none;color:var(--text);
+  font:400 13.5px var(--font);transition:background .2s;
+}
+.g-inp:focus{background:var(--fill-2)}
+.g-inp::placeholder{color:var(--muted-2)}
+.g-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.g-submit{
+  width:100%;height:42px;border-radius:var(--r-pill);background:var(--fill-3);
+  color:var(--text);font-size:13px;font-weight:600;margin-top:2px;
+  transition:background .2s,transform .2s;
+}
+.g-submit:hover{background:var(--inverse);color:var(--on-inverse)}
+.g-submit:active{transform:scale(.97)}
+
+.card-nets{display:flex;align-items:center;justify-content:center;gap:6px;margin-bottom:2px}
+.net-pill{
+  font-size:10px;font-weight:600;letter-spacing:.03em;padding:3px 8px;border-radius:var(--r-pill);
+  background:var(--fill-1);color:var(--muted-2);transition:background .2s,color .2s;
+}
+.net-pill.active{background:var(--inverse);color:var(--on-inverse)}
+
+/* Pricing Plans inside Step 2 */
+.plan-grid{width:100%;display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:20px;text-align:left}
+.plan-card{
+  position:relative;padding:14px;border-radius:var(--r-panel);background:var(--fill-1);
+  cursor:pointer;transition:background .22s ease,transform .35s cubic-bezier(.34,1.5,.64,1);
+}
+.plan-card:hover{background:var(--fill-2)}
+.plan-card:active{transform:scale(.97)}
+.plan-card.on{background:var(--surface)}
+.plan-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.plan-name{font-size:14px;font-weight:600;color:var(--text)}
+.plan-badge{
+  font-size:10px;font-weight:600;padding:2px 7px;border-radius:var(--r-pill);
+  background:var(--fill-2);color:var(--muted);
+}
+.plan-card.on .plan-badge{background:var(--inverse);color:var(--on-inverse)}
+.plan-price{font-size:22px;font-weight:600;letter-spacing:-.03em;color:var(--text)}
+.plan-price small{font-size:12px;font-weight:400;color:var(--muted)}
+.plan-desc{margin-top:6px;font-size:11.5px;line-height:1.4;color:var(--muted)}
+
+.pay-actions{width:100%;display:flex;flex-direction:column;align-items:center;gap:10px;margin-top:18px}
+.pay-sec{
+  width:100%;height:44px;border-radius:var(--r-pill);background:var(--fill-1);
+  color:var(--text-2);font-size:13.5px;font-weight:500;
+  transition:background .2s,color .2s,transform .2s;
+}
+.pay-sec:hover{background:var(--fill-2);color:var(--text)}
+.pay-sec:active{transform:scale(.97)}
+
+/* Loading > Success Morph Pill Button (exact DesignBookmark skill) */
+.morph-wrap{width:100%;display:flex;justify-content:center}
+.morph-btn{
+  position:relative;height:46px;width:100%;border-radius:var(--r-pill);
+  background:var(--inverse);color:var(--on-inverse);overflow:hidden;
+  font-size:14px;font-weight:600;will-change:width,transform;
+}
+.morph-btn .m-txt,.morph-btn .m-done{
+  position:absolute;inset:0;display:flex;align-items:center;justify-content:center;gap:8px;
+  white-space:nowrap;will-change:transform,opacity;
+}
+.morph-btn .m-done{color:var(--on-green);opacity:0}
+.morph-btn .m-done svg{width:19px;height:19px;fill:none;stroke:currentColor;stroke-width:2.6;stroke-linecap:round;stroke-linejoin:round}
+.morph-btn .m-spin{
+  position:absolute;left:50%;top:50%;width:22px;height:22px;margin:-11px 0 0 -11px;border-radius:50%;
+  background:conic-gradient(from 0deg,rgba(0,0,0,0) 0 10%,var(--on-inverse) 85%,rgba(0,0,0,0) 85%);
+  -webkit-mask:radial-gradient(circle closest-side,transparent 68%,#000 72%);
+  mask:radial-gradient(circle closest-side,transparent 68%,#000 72%);
+  opacity:0;will-change:transform,opacity;
+}
+.trial-note{margin-top:8px;font-size:11.5px;color:var(--muted-2)}
+
+@media(prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important}
+}
+
+/* ====== Sheld! IDE Workspace & Workbench ====== */
+.ide-wsbar{
+  display:flex;align-items:center;gap:6px;flex-wrap:wrap;justify-content:center;
+  max-width:calc(100% - 420px);
+}
+.ide-btn{
+  height:34px;padding:0 12px;border-radius:var(--r-pill);background:var(--card);
+  border:1px solid var(--fill-1);color:var(--text-2);font-size:12px;font-weight:500;
+  display:inline-flex;align-items:center;gap:7px;transition:background .16s,color .16s,border-color .16s,transform .15s;
+  white-space:nowrap;
+}
+.ide-btn:hover{background:var(--surface);color:var(--text);border-color:var(--fill-2)}
+.ide-btn:active{transform:scale(.97)}
+.ide-btn.on{background:var(--fill-2);color:var(--text);border-color:var(--fill-3)}
+.ide-btn.primary{background:var(--green);color:var(--on-green);border-color:transparent;font-weight:600}
+.ide-btn.primary:hover{filter:brightness(1.06)}
+.ide-btn svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.ws-chip-name{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ide-comp-badge{
+  font-size:10.5px;padding:2px 7px;border-radius:99px;background:var(--fill-1);
+  color:var(--green-text);font-family:var(--mono);letter-spacing:-.02em;
+}
+
+.ide-shell{
+  flex:1;min-height:0;width:100%;display:flex;overflow:hidden;position:relative;
+  border-top:1px solid var(--fill-1);
+}
+
+/* Left Explorer */
+.ide-side{
+  width:250px;flex:none;background:var(--card);border-right:1px solid var(--fill-1);
+  display:flex;flex-direction:column;min-height:0;transition:width .2s ease,opacity .18s ease;
+}
+.ide-side.collapsed{width:0;min-width:0;border-right:none;overflow:hidden;opacity:0}
+.ide-side-head{
+  padding:10px 12px 8px;display:flex;align-items:center;justify-content:space-between;gap:6px;
+  border-bottom:1px solid var(--fill-1);flex:none;
+}
+.ide-side-title{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.ide-side-acts{display:flex;align-items:center;gap:4px}
+.ide-ico-btn{
+  width:26px;height:26px;border-radius:8px;display:grid;place-items:center;
+  color:var(--muted);transition:background .15s,color .15s;
+}
+.ide-ico-btn:hover{background:var(--fill-2);color:var(--text)}
+.ide-ico-btn svg{width:14px;height:14px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+.ide-ws-path{
+  padding:7px 12px;font-size:11px;font-family:var(--mono);color:var(--muted);
+  border-bottom:1px solid var(--fill-1);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  background:var(--fill-1);flex:none;
+}
+.ide-tree{flex:1;min-height:0;overflow-y:auto;padding:6px 6px 14px}
+.ide-tree-empty{
+  padding:22px 14px;text-align:center;color:var(--muted);font-size:12px;line-height:1.55;
+}
+.ide-tree-empty button{
+  margin-top:10px;width:100%;justify-content:center;
+}
+.tree-row{
+  display:flex;align-items:center;gap:6px;padding:5px 8px;border-radius:8px;
+  font-size:12.5px;color:var(--text-2);cursor:pointer;user-select:none;
+  transition:background .12s,color .12s;position:relative;
+}
+.tree-row:hover{background:var(--fill-1);color:var(--text)}
+.tree-row.active{background:var(--fill-2);color:var(--text);font-weight:500}
+.tree-row .tr-name{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.tree-row .tr-ext{
+  font-size:10px;font-family:var(--mono);padding:1px 5px;border-radius:5px;
+  background:var(--fill-1);color:var(--muted);flex:none;
+}
+.tree-row .tr-ext.cpp{color:#6cb6ff}
+.tree-row .tr-ext.html{color:#ff8f5c}
+.tree-row .tr-ext.py{color:#ffd866}
+.tree-row .tr-ext.js{color:#f7df1e}
+.tree-row .tr-del{
+  opacity:0;width:20px;height:20px;border-radius:6px;display:grid;place-items:center;
+  color:var(--muted);font-size:12px;transition:opacity .12s,background .12s,color .12s;
+}
+.tree-row:hover .tr-del{opacity:1}
+.tree-row .tr-del:hover{background:rgba(255,90,95,.18);color:var(--red)}
+.tree-chev{width:12px;height:12px;flex:none;transition:transform .15s;color:var(--muted)}
+.tree-dir-wrap.closed > .tree-children{display:none}
+.tree-dir-wrap.closed > .tree-row .tree-chev{transform:rotate(-90deg)}
+
+/* Center Chat */
+.ide-chat{
+  flex:1;min-width:340px;display:flex;flex-direction:column;min-height:0;position:relative;
+}
+
+/* Right Workbench (Editor + Preview + Terminal) */
+.ide-work{
+  width:48%;min-width:380px;max-width:64%;background:var(--stage);
+  border-left:1px solid var(--fill-1);display:flex;flex-direction:column;min-height:0;
+}
+.ide-work.hidden{display:none}
+.work-top{
+  display:flex;align-items:center;justify-content:space-between;gap:8px;
+  padding:6px 10px;background:var(--card);border-bottom:1px solid var(--fill-1);flex:none;
+}
+.work-tabs{display:flex;align-items:center;gap:4px;overflow-x:auto;flex:1;min-width:0}
+.wtab{
+  height:30px;padding:0 10px;border-radius:9px;display:inline-flex;align-items:center;gap:7px;
+  font-size:12px;color:var(--muted);background:transparent;white-space:nowrap;
+  transition:background .14s,color .14s;flex:none;
+}
+.wtab:hover{background:var(--fill-1);color:var(--text-2)}
+.wtab.active{background:var(--fill-2);color:var(--text);font-weight:500}
+.wtab .wtab-dot{width:6px;height:6px;border-radius:50%;background:var(--green);display:none}
+.wtab.dirty .wtab-dot{display:inline-block}
+.wtab-x{
+  width:16px;height:16px;border-radius:5px;display:grid;place-items:center;
+  font-size:11px;color:var(--muted);
+}
+.wtab-x:hover{background:var(--fill-3);color:var(--text)}
+.work-acts{display:flex;align-items:center;gap:5px;flex:none}
+.work-pill{
+  height:28px;padding:0 10px;border-radius:8px;background:var(--fill-1);
+  color:var(--text-2);font-size:11.5px;font-weight:500;display:inline-flex;align-items:center;gap:5px;
+  transition:background .14s,color .14s;
+}
+.work-pill:hover{background:var(--fill-2);color:var(--text)}
+.work-pill.save{background:var(--green);color:var(--on-green);font-weight:600}
+
+.work-body{flex:1;min-height:0;position:relative;display:flex;flex-direction:column}
+.ed-wrap{flex:1;min-height:0;display:flex;flex-direction:column}
+.ed-wrap.hidden{display:none}
+.ed-subbar{
+  padding:5px 12px;font-size:11px;font-family:var(--mono);color:var(--muted);
+  border-bottom:1px solid var(--fill-1);display:flex;justify-content:space-between;background:var(--stage);flex:none;
+}
+.ed-area{
+  flex:1;min-height:0;width:100%;border:0;outline:none;resize:none;padding:12px 14px;
+  background:var(--stage);color:var(--text);font-family:var(--mono);font-size:12.5px;line-height:1.6;
+  tab-size:2;white-space:pre;overflow:auto;
+}
+.pv-wrap{flex:1;min-height:0;display:flex;flex-direction:column;background:#0a0a10}
+.pv-wrap.hidden{display:none}
+.pv-bar{
+  padding:6px 10px;background:var(--card);border-bottom:1px solid var(--fill-1);
+  display:flex;align-items:center;justify-content:space-between;gap:8px;flex:none;
+}
+.pv-url{font-size:11px;font-family:var(--mono);color:var(--muted);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.pv-frame{flex:1;width:100%;height:100%;border:0;background:#000}
+
+/* Bottom Terminal */
+.term-pane{
+  height:196px;min-height:110px;max-height:55%;border-top:1px solid var(--fill-1);
+  background:var(--card);display:flex;flex-direction:column;flex:none;
+}
+.term-pane.hidden{display:none}
+.term-head{
+  padding:6px 12px;border-bottom:1px solid var(--fill-1);
+  display:flex;align-items:center;justify-content:space-between;gap:8px;flex:none;
+}
+.term-title{font-size:11px;font-weight:600;text-transform:uppercase;letter-spacing:.05em;color:var(--muted)}
+.term-out{
+  flex:1;min-height:0;overflow-y:auto;padding:8px 12px;font-family:var(--mono);
+  font-size:12px;line-height:1.5;color:var(--text-2);white-space:pre-wrap;word-break:break-word;
+}
+.term-line.err{color:var(--red)}
+.term-line.sys{color:var(--green-text)}
+.term-in-row{
+  display:flex;align-items:center;gap:8px;padding:6px 12px;border-top:1px solid var(--fill-1);background:var(--stage);flex:none;
+}
+.term-prompt{font-family:var(--mono);font-size:12px;color:var(--green-text);user-select:none}
+.term-cmd{
+  flex:1;background:none;border:0;outline:none;color:var(--text);font-family:var(--mono);font-size:12px;
+}
+
+/* File card extra IDE buttons */
+.file-btns .open-ide-btn,.file-btns .pv-ide-btn{color:var(--green-text)}
+
+/* IDE Modal (replaces prompt) */
+.ide-modal-ov{
+  position:fixed;inset:0;z-index:120;background:rgba(0,0,0,.62);backdrop-filter:blur(8px);
+  display:none;align-items:center;justify-content:center;padding:20px;
+}
+.ide-modal-ov.open{display:flex}
+.ide-modal{
+  width:100%;max-width:420px;background:var(--card);border:1px solid var(--fill-2);
+  border-radius:var(--r-sheet);padding:20px;display:flex;flex-direction:column;gap:12px;
+}
+.ide-modal h3{font-size:15px;font-weight:600;color:var(--text)}
+.ide-modal p{font-size:12px;color:var(--muted);line-height:1.45;word-break:break-all}
+.ide-modal input{
+  width:100%;height:38px;border-radius:11px;border:1px solid var(--fill-2);background:var(--stage);
+  color:var(--text);padding:0 12px;font-size:13px;font-family:var(--mono);outline:none;
+}
+.ide-modal input:focus{border-color:var(--green)}
+.ide-modal-acts{display:flex;justify-content:flex-end;gap:8px;margin-top:4px}
+
+@media(max-width:980px){
+  .ide-wsbar{display:none}
+  .ide-side{position:absolute;left:0;top:0;bottom:0;z-index:30}
+  .ide-work{position:absolute;right:0;top:0;bottom:0;width:100%;max-width:100%;min-width:0;z-index:25}
+}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <filter id="dotgoo" x="-50%" y="-50%" width="200%" height="200%">
+    <feGaussianBlur in="SourceGraphic" stdDeviation="3.2" result="b"/>
+    <feColorMatrix in="b" mode="matrix" values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 20 -8"/>
+  </filter>
+</svg>
+
+<div class="stage" id="stage">
+  <header class="topbar">
+    <div class="brand-group">
+      <button class="model-pill" id="modelBtn" aria-expanded="false">
+        <span class="orb" id="modelOrb" data-av="1"></span>
+        <span id="modelName">Fable 5.2</span>
+        <span class="price-tag" id="modelTag">$20/мес</span>
+        <svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M7 10l5 5 5-5"/></svg>
+      </button>
+      <div class="model-menu" id="modelMenu"></div>
+    </div>
+
+    <div class="ide-wsbar" id="ideWsBar">
+      <button class="ide-btn" id="toggleWorkBtn" type="button" title="Показать/скрыть код и превью">Код / Превью</button>
+    </div>
+
+    <div class="top-actions">
+      <button class="hist-trig" id="historyBtn" aria-expanded="false" title="История чатов">
+        <svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l3 2"/></svg>
+        <span>История</span>
+      </button>
+      <div class="hist-menu" id="historyMenu">
+        <div class="hist-head">
+          <span>История чатов</span>
+          <button class="hist-clear" id="histClearBtn" type="button">Очистить</button>
+        </div>
+        <div class="hist-list" id="histList"></div>
+      </div>
+      <button class="icon-pill" id="newChatBtn" title="Новый чат">
+        <svg viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></svg>
+      </button>
+      <button class="icon-pill" id="themeBtn" title="Сменить тему">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor" stroke="none"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <div class="ide-shell">
+    <div class="ide-chat">
+      <main class="chat-scroll" id="chatScroll">
+        <div class="chat-col">
+          <section class="hero" id="hero">
+            <div class="hero-orb" id="heroOrb" data-av="1"></div>
+            <div class="roll" id="roll" role="button" tabindex="0">
+              <span class="lead">Создавай</span>
+              <span class="slot" id="slot"></span>
+            </div>
+            <p class="wave-sub" id="waveSub"></p>
+            <div class="chips" id="chips"></div>
+          </section>
+          <div class="msgs" id="msgs"></div>
+        </div>
+      </main>
+
+      <footer class="dock-wrap">
+        <div class="pb" id="pb">
+          <div class="pb-status" id="pbStatus" aria-live="polite">
+            <span class="mark"></span>
+            <span class="label" id="pbLabel">Thinking</span>
+          </div>
+          <div class="att-tray" id="attTray"></div>
+          <div class="pb-row">
+            <textarea id="field" rows="1" placeholder="Попроси Sheld! сделать игру, C++ проект или сайт..." aria-label="Промпт"></textarea>
+            <button class="send" id="sendBtn" type="button" aria-label="Отправить">
+              <i class="arrow"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 19V5M6 11l6-6 6 6"/></svg></i>
+              <i class="stop"></i>
+            </button>
+          </div>
+          <div class="pb-bar">
+            <input type="file" id="fileInput" multiple hidden>
+            <button class="attach-btn" id="attachBtn" type="button" title="Прикрепить картинку или файл">
+              <svg viewBox="0 0 24 24"><path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/></svg>
+              <span>Файл</span>
+            </button>
+            <button class="think-toggle on" id="thinkBtn" type="button" aria-pressed="true">
+              <span class="tk-ico" id="tkIco">
+                <svg viewBox="0 0 24 24"><path d="M12 3v3M12 18v3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M3 12h3M18 12h3M4.9 19.1l2.1-2.1M17 7l2.1-2.1"/><circle cx="12" cy="12" r="3.5"/></svg>
+              </span>
+              <span>Thinking</span>
+            </button>
+          </div>
+        </div>
+      </footer>
+    </div>
+
+    <section class="ide-work hidden" id="ideWork">
+      <div class="work-top">
+        <div class="work-tabs" id="workTabs"></div>
+        <div class="work-acts">
+          <button class="work-pill save" id="edSaveBtn" type="button" style="display:none">Сохранить</button>
+          <button class="work-pill" id="workCloseBtn" type="button" title="Скрыть панель">✕</button>
+        </div>
+      </div>
+      <div class="work-body">
+        <div class="ed-wrap" id="edWrap">
+          <div class="ed-subbar">
+            <span id="edPathLabel">Нет открытого файла</span>
+            <span id="edStatusLabel">Режим просмотра кода</span>
+          </div>
+          <textarea class="ed-area" id="codeEditor" spellcheck="false" readonly placeholder="Попроси ИИ создать игру, сайт или программу — здесь откроется код и превью..."></textarea>
+        </div>
+        <div class="pv-wrap hidden" id="pvWrap">
+          <div class="pv-bar">
+            <span class="pv-url" id="pvUrlLabel">Превью игры / сайта</span>
+            <div style="display:flex;gap:6px">
+              <button class="work-pill" id="pvReloadBtn" type="button">↻ Обновить</button>
+              <button class="work-pill" id="pvExtBtn" type="button">↗ Окно</button>
+            </div>
+          </div>
+          <iframe class="pv-frame" id="pvFrame" sandbox="allow-scripts allow-same-origin allow-pointer-lock allow-modals allow-forms"></iframe>
+        </div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<div class="img-lb" id="imgLb"><img id="imgLbPic" alt=""></div>
+
+<!-- 2-Step Auth + Pricing/Trial Gate -->
+<div class="gate-ov" id="gateOv">
+  <div class="gate-card">
+    <button class="gate-close" id="gateClose" aria-label="Закрыть">
+      <svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg>
+    </button>
+
+    <!-- Step 1: Apple ID or Guest Login -->
+    <div class="gate-step on" id="stepAuth">
+      <div class="gate-orb" data-av="1"></div>
+      <h2 class="gate-title">Войти в Sheld!</h2>
+      <p class="gate-sub">Чтобы использовать Pro-модели Fable 5.2 и Astra 6, войдите через Apple ID или как гость.</p>
+      <div class="oauth-col">
+        <button class="oauth-btn" id="appleToggleBtn" type="button">
+          <svg viewBox="0 0 24 24"><path d="M16.365 1.43c0 1.14-.493 2.27-1.177 3.08-.744.9-1.99 1.57-2.987 1.57-.12 0-.23-.02-.3-.03-.01-.06-.04-.22-.04-.39 0-1.15.572-2.27 1.206-2.98.804-.94 2.142-1.64 3.248-1.68.03.13.05.28.05.43zm4.565 15.71c-.03.07-.463 1.58-1.518 3.12-.945 1.34-1.94 2.71-3.43 2.71-1.517 0-1.9-.88-3.63-.88-1.698 0-2.302.91-3.67.91-1.377 0-2.332-1.26-3.428-2.8-1.287-1.82-2.323-4.63-2.323-7.28 0-4.28 2.797-6.55 5.552-6.55 1.448 0 2.675.95 3.6.95.865 0 2.222-1.01 3.902-1.01.613 0 2.886.06 4.374 2.19-.13.09-2.383 1.37-2.383 4.19 0 3.26 2.854 4.42 2.955 4.45z"/></svg>
+          Войти через Apple ID
+        </button>
+      </div>
+
+      <form class="sub-form" id="appleForm" novalidate>
+        <input class="g-inp" id="appleEmail" type="email" placeholder="Apple ID (email)" autocomplete="off">
+        <input class="g-inp" id="applePass" type="password" placeholder="Пароль">
+        <button class="g-submit" id="appleSubmit" type="submit">Войти</button>
+      </form>
+
+      <div class="gate-div">или</div>
+      <div class="morph-wrap">
+        <button class="morph-btn" id="guestBtn" type="button">
+          <span class="m-txt">Войти как гость</span>
+          <span class="m-spin" aria-hidden="true"></span>
+          <span class="m-done"><svg viewBox="0 0 24 24"><path class="m-tick" d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>
+        </button>
+      </div>
+      <div class="gate-hint" id="authHint"></div>
+    </div>
+
+    <!-- Step 2: Pricing, Card Checkout & 3-Day Trial -->
+    <div class="gate-step" id="stepPlan">
+      <div class="gate-orb" data-av="2"></div>
+      <h2 class="gate-title">Выберите тариф</h2>
+      <p class="gate-sub">50 запросов для Fable 5.2 и Astra 6, либо Shelton V3 бесплатно</p>
+
+      <div class="plan-grid">
+        <div class="plan-card on" data-plan="pro" data-price="$20">
+          <div class="plan-top"><span class="plan-name">Pro</span><span class="plan-badge">Хит</span></div>
+          <div class="plan-price">$20<small> / мес</small></div>
+          <div class="plan-desc">Fable 5.2 и Astra 6 · 50 запросов</div>
+        </div>
+        <div class="plan-card" data-plan="ultra" data-price="$40">
+          <div class="plan-top"><span class="plan-name">Ultra</span><span class="plan-badge">Max</span></div>
+          <div class="plan-price">$40<small> / мес</small></div>
+          <div class="plan-desc">Приоритет GPU и режим Thinking</div>
+        </div>
+      </div>
+
+      <div class="pay-actions">
+        <div class="morph-wrap">
+          <button class="morph-btn" id="trialBtn" type="button">
+            <span class="m-txt">Активировать Trial на 3 дня</span>
+            <span class="m-spin" aria-hidden="true"></span>
+            <span class="m-done"><svg viewBox="0 0 24 24"><path class="m-tick" d="M5 12.5l4.5 4.5L19 7.5"/></svg></span>
+          </button>
+        </div>
+        <button class="pay-sec" id="payBtn" type="button">Оплатить $20 картой</button>
+      </div>
+
+      <form class="sub-form" id="cardForm" novalidate>
+        <div class="card-nets">
+          <span class="net-pill" data-net="visa">Visa</span>
+          <span class="net-pill" data-net="mc">Mastercard</span>
+          <span class="net-pill" data-net="up">UnionPay</span>
+          <span class="net-pill" data-net="mir">МИР</span>
+        </div>
+        <input class="g-inp" id="cardNum" inputmode="numeric" maxlength="19" placeholder="0000 0000 0000 0000">
+        <div class="g-row">
+          <input class="g-inp" id="cardExp" inputmode="numeric" maxlength="5" placeholder="ММ/ГГ">
+          <input class="g-inp" id="cardCvc" inputmode="numeric" maxlength="4" placeholder="CVC">
+        </div>
+        <button class="g-submit" id="cardSubmit" type="submit">Оплатить $20</button>
+      </form>
+
+      <div class="gate-hint" id="planHint"></div>
+      <div class="trial-note">Без списаний · Отмена в любой момент</div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ==========================================================================
+   SHARED MOTION SPRING ENGINE
+   ========================================================================== */
+const Motion = (() => {
+  const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const S = (x, k = 400, c = 30) => ({ x, v: 0, t: x, k, c });
+  const step = (s, dt) => { const a = -s.k * (s.x - s.t) - s.c * s.v; s.v += a * dt; s.x += s.v * dt; };
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  const timers = [];
+  const after = (sec, fn) => { const t = { t: sec, fn }; timers.push(t); return t; };
+  const cancel = t => { const i = timers.indexOf(t); if (i > -1) timers.splice(i, 1); };
+  const comps = [];
+  let last = performance.now();
+  function loop(now) {
+    const dt = Math.min((now - last) / 1000, 1 / 30); last = now;
+    for (let i = timers.length - 1; i >= 0; i--) {
+      if ((timers[i].t -= dt) <= 0) timers.splice(i, 1)[0].fn();
+    }
+    const sub = 4;
+    for (let k = 0; k < sub; k++) comps.forEach(c => c.frame(dt / sub));
+    comps.forEach(c => c.render());
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+  return { S, step, clamp, after, cancel, reduce, register: c => comps.push(c) };
+})();
+
+const $ = id => document.getElementById(id);
+
+/* ==========================================================================
+   1. MODELS & HERO (Word Roll + Weight Wave)
+   ========================================================================== */
+const MODELS = [
+  { id: 'fable', name: 'Fable 5.2', desc: 'Топовая генерация игр и кода', price: '$20/мес', tier: 'pro', av: '1' },
+  { id: 'astra6', name: 'Astra 6', desc: 'Квантовое рассуждение и архитектура', price: '$25/мес', tier: 'pro', av: '2' },
+  { id: 'shelton', name: 'Shelton V3', desc: 'Быстрая базовая модель', price: '50/день', tier: 'free', av: '6' }
+];
+let curModel = MODELS[0], thinkLevel = 2, busy = false, history = [];
+let guestDone = false, trialActive = false;
+let proQuota = 50, sheltonQuota = 50;
+
+const modelBtn = $('modelBtn'), modelMenu = $('modelMenu'), modelTag = $('modelTag');
+function getQuotaMeta(m) {
+  if (m.tier === 'free') return `${sheltonQuota}/50 в день`;
+  if (trialActive) return `Trial · ${proQuota}/50`;
+  return m.price;
+}
+function updateModelTag() {
+  modelTag.textContent = getQuotaMeta(curModel);
+}
+function renderModelMenu() {
+  modelMenu.innerHTML = MODELS.map((m, idx) => `
+    <button class="m-opt${m.id === curModel.id ? ' on' : ''}" data-idx="${idx}">
+      <span class="orb" data-av="${m.av}" style="width:26px;height:26px"></span>
+      <span class="info"><b>${m.name}</b><small>${m.desc}</small></span>
+      <span class="m-price">${getQuotaMeta(m)}</span>
+    </button>`).join('');
+  modelMenu.querySelectorAll('.m-opt').forEach(b => b.onclick = () => {
+    curModel = MODELS[+b.dataset.idx];
+    $('modelName').textContent = curModel.name;
+    $('modelOrb').dataset.av = curModel.av;
+    $('heroOrb').dataset.av = curModel.av;
+    updateModelTag();
+    renderModelMenu();
+    toggleMenu(false);
+  });
+}
+function toggleMenu(open) {
+  if (open !== false && !trialActive) {
+    openGate();
+    return;
+  }
+  const s = open ?? !modelMenu.classList.contains('open');
+  modelMenu.classList.toggle('open', s);
+  modelBtn.setAttribute('aria-expanded', s);
+}
+modelBtn.onclick = e => { e.stopPropagation(); toggleMenu(); };
+document.addEventListener('click', e => { if (!e.target.closest('.brand-group')) toggleMenu(false); });
+updateModelTag();
+renderModelMenu();
+
+/* Word Roll */
+(() => {
+  const roll = $('roll'), slot = $('slot');
+  const WORDS = ['игры', 'сайты', 'ботов', 'шедевры'];
+  const width = Motion.S(0, 320, 30);
+  let live = [], i = 0, timer = null;
+  function make(word) {
+    const el = document.createElement('span');
+    el.className = 'word';
+    const letters = [...word].map(ch => {
+      const l = document.createElement('span');
+      l.className = 'ch'; l.textContent = ch;
+      el.appendChild(l);
+      return { el: l, s: Motion.S(1, 420, 26) };
+    });
+    slot.appendChild(el);
+    return { el, letters, out: false };
+  }
+  function show(word, first) {
+    live.forEach(w => {
+      if (w.out) return; w.out = true;
+      w.letters.forEach((l, k) => Motion.after(k * .024, () => { l.s.t = -1; }));
+      Motion.after(.9, () => { w.el.remove(); live = live.filter(x => x !== w); });
+    });
+    const w = make(word);
+    w.letters.forEach((l, k) => {
+      if (first) l.s.x = l.s.t = 0;
+      else Motion.after(.06 + k * .03, () => { l.s.t = 0; });
+    });
+    live.push(w);
+    width.t = w.el.offsetWidth;
+    if (first) width.x = width.t;
+  }
+  function schedule() { if (timer) Motion.cancel(timer); timer = Motion.after(2.4, next); }
+  function next() { i = (i + 1) % WORDS.length; show(WORDS[i]); schedule(); }
+  roll.onclick = next;
+  show(WORDS[0], true);
+  schedule();
+  document.fonts?.ready.then(() => { const w = live[live.length - 1]; if (w) width.t = w.el.offsetWidth; });
+  Motion.register({
+    frame(dt) { Motion.step(width, dt); live.forEach(w => w.letters.forEach(l => Motion.step(l.s, dt))); },
+    render() {
+      slot.style.width = width.x.toFixed(2) + 'px';
+      live.forEach(w => w.letters.forEach(l => {
+        const y = l.s.x;
+        l.el.style.transform = `translateY(${(y * 105).toFixed(2)}%)`;
+        l.el.style.opacity = Motion.clamp(1 - Math.abs(y) * .9, 0, 1).toFixed(3);
+      }));
+    }
+  });
+})();
+
+/* Weight Wave */
+(() => {
+  const el = $('waveSub');
+  const TXT = 'Fable 5.2, Astra 6 и Shelton V3 — быстрая генерация игр, сайтов и кода';
+  const LIGHT = 320, BOLD = 780, SPREAD = .14;
+  const letters = [...TXT].map(ch => {
+    const s = document.createElement('span');
+    s.className = 'wch'; s.textContent = ch;
+    el.appendChild(s);
+    return { el: s, w: Motion.S(LIGHT, 260, 22) };
+  });
+  const focus = Motion.S(-.15, 150, 22);
+  let hover = false, t = 0;
+  el.addEventListener('pointermove', e => {
+    const r = el.getBoundingClientRect();
+    hover = true; focus.t = (e.clientX - r.left) / (r.width || 1);
+  });
+  el.addEventListener('pointerleave', () => { hover = false; t = 0; });
+  Motion.register({
+    frame(dt) {
+      if (!hover) { t += dt; focus.t = -.06 + 1.12 * (.5 - .5 * Math.cos(t * Math.PI * 2 / 4.6)); }
+      Motion.step(focus, dt); letters.forEach(l => Motion.step(l.w, dt));
+    },
+    render() {
+      if ($('stage').classList.contains('started')) return;
+      const total = el.offsetWidth || 1;
+      const centres = letters.map(l => (l.el.offsetLeft + l.el.offsetWidth / 2) / total);
+      letters.forEach((l, k) => {
+        const d = (centres[k] - focus.x) / SPREAD;
+        const g = Math.exp(-d * d);
+        l.w.t = LIGHT + (BOLD - LIGHT) * g;
+        l.el.style.fontWeight = Motion.clamp(l.w.x, 100, 900).toFixed(1);
+        l.el.style.opacity = (.52 + .48 * Motion.clamp((l.w.x - LIGHT) / (BOLD - LIGHT), 0, 1)).toFixed(3);
+      });
+    }
+  });
+})();
+
+/* Quick Chips */
+const PROMPTS = [
+  'Сделай 2D шутер на HTML',
+  'Напиши змейку на Python',
+  'Создай кликер с прокачкой',
+  'Сверстай лендинг для стартапа'
+];
+$('chips').innerHTML = PROMPTS.map(p => `<button class="chip-btn">${p}</button>`).join('');
+$('chips').querySelectorAll('button').forEach(b => b.onclick = () => {
+  field.value = b.textContent; fit(); submit();
+});
+
+/* ==========================================================================
+   2. PROMPT BOX + THINKING TOGGLE + MAGNETIC BUTTONS
+   ========================================================================== */
+const field = $('field'), sendBtn = $('sendBtn'), pbStatus = $('pbStatus'), pbLabel = $('pbLabel');
+const arrowIcon = sendBtn.querySelector('.arrow'), stopIcon = sendBtn.querySelector('.stop');
+const thinkBtn = $('thinkBtn'), tkIco = $('tkIco');
+const H = Motion.S(24, 420, 34), SH = Motion.S(0, 380, 30), M = Motion.S(0, 520, 30);
+const tkPop = Motion.S(1, 520, 16), tkRot = Motion.S(0, 320, 18);
+let thinkingEnabled = true;
+
+thinkBtn.addEventListener('pointerdown', () => { tkPop.t = .91; });
+thinkBtn.addEventListener('pointerup', () => { tkPop.t = 1; });
+thinkBtn.addEventListener('pointerleave', () => { tkPop.t = 1; });
+thinkBtn.onclick = () => {
+  thinkingEnabled = !thinkingEnabled;
+  thinkLevel = thinkingEnabled ? 2 : 0;
+  thinkBtn.classList.toggle('on', thinkingEnabled);
+  thinkBtn.setAttribute('aria-pressed', String(thinkingEnabled));
+  tkPop.t = 1; tkPop.v = 3.2;
+  tkRot.t += thinkingEnabled ? 90 : -90;
+};
+
+const pb = $('pb'), attachBtn = $('attachBtn'), fileInput = $('fileInput'), attTray = $('attTray');
+const imgLb = $('imgLb'), imgLbPic = $('imgLbPic');
+let pendingFiles = [];
+
+function formatFileSize(bytes) {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1048576) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / 1048576).toFixed(1)} MB`;
+}
+function fileExt(name) {
+  const m = String(name || '').match(/\.([a-z0-9]{1,5})$/i);
+  return m ? m[1].toUpperCase() : 'FILE';
+}
+function isTextAttachment(file) {
+  if (file.type && (file.type.startsWith('text/') || /json|xml|javascript|typescript|yaml|svg/.test(file.type))) return true;
+  return /\.(txt|md|json|js|ts|jsx|tsx|py|html|htm|css|scss|xml|csv|yml|yaml|sql|sh|bat|ini|cfg|log|c|cpp|h|rs|go|java)$/i.test(file.name);
+}
+function compressImage(file) {
+  return new Promise(resolve => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const max = 480, scale = Math.min(1, max / Math.max(img.width, img.height));
+        const w = Math.max(1, Math.round(img.width * scale)), h = Math.max(1, Math.round(img.height * scale));
+        const cv = document.createElement('canvas');
+        cv.width = w; cv.height = h;
+        cv.getContext('2d').drawImage(img, 0, 0, w, h);
+        resolve({ dataUrl: cv.toDataURL('image/jpeg', 0.78), dims: `${img.width}x${img.height}` });
+      };
+      img.onerror = () => resolve({ dataUrl: '', dims: '' });
+      img.src = reader.result;
+    };
+    reader.onerror = () => resolve({ dataUrl: '', dims: '' });
+    reader.readAsDataURL(file);
+  });
+}
+async function readAttachment(file) {
+  const isImage = !!(file.type && file.type.startsWith('image/'));
+  const base = {
+    id: Math.random().toString(36).slice(2, 9),
+    name: file.name || 'image.png',
+    size: file.size || 0,
+    isImage,
+    dataUrl: '',
+    dims: '',
+    excerpt: ''
+  };
+  if (isImage) {
+    const res = await compressImage(file);
+    base.dataUrl = res.dataUrl;
+    base.dims = res.dims;
+  } else if (isTextAttachment(file) && file.size <= 2000000) {
+    try { base.excerpt = (await file.text()).slice(0, 100000); } catch {}
+  }
+  return base;
+}
+function renderAttTray() {
+  attTray.innerHTML = '';
+  attTray.classList.toggle('show', pendingFiles.length > 0);
+  pendingFiles.forEach((f, idx) => {
+    const chip = document.createElement('div');
+    chip.className = 'att-chip';
+    const preview = f.isImage && f.dataUrl
+      ? `<img class="att-thumb" src="${f.dataUrl}" alt="">`
+      : `<div class="att-ext">${fileExt(f.name)}</div>`;
+    chip.innerHTML = `${preview}<div class="att-meta"><b></b><small>${formatFileSize(f.size)}</small></div><button class="att-rm" type="button" aria-label="Удалить"><svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button>`;
+    chip.querySelector('.att-meta b').textContent = f.name;
+    chip.querySelector('.att-rm').onclick = () => {
+      pendingFiles.splice(idx, 1);
+      renderAttTray();
+      fit();
+    };
+    attTray.appendChild(chip);
+  });
+}
+async function addFiles(list) {
+  const arr = [...(list || [])].slice(0, Math.max(0, 5 - pendingFiles.length));
+  if (!arr.length) return;
+  const items = await Promise.all(arr.map(readAttachment));
+  pendingFiles.push(...items);
+  renderAttTray();
+  fit();
+}
+function openLightbox(src) {
+  if (!src) return;
+  imgLbPic.src = src;
+  imgLb.classList.add('show');
+}
+imgLb.onclick = () => imgLb.classList.remove('show');
+attachBtn.onclick = () => fileInput.click();
+fileInput.onchange = () => { addFiles(fileInput.files); fileInput.value = ''; };
+pb.addEventListener('dragover', e => { e.preventDefault(); pb.classList.add('drag'); });
+pb.addEventListener('dragleave', e => { if (!pb.contains(e.relatedTarget)) pb.classList.remove('drag'); });
+pb.addEventListener('drop', e => {
+  e.preventDefault(); pb.classList.remove('drag');
+  if (e.dataTransfer?.files?.length) addFiles(e.dataTransfer.files);
+});
+field.addEventListener('paste', e => {
+  const imgs = [...(e.clipboardData?.files || [])].filter(f => f.type.startsWith('image/'));
+  if (imgs.length) { e.preventDefault(); addFiles(imgs); }
+});
+
+function fit() {
+  field.style.height = 'auto';
+  H.t = Math.min(field.scrollHeight, 132);
+  field.style.height = H.x + 'px';
+  sendBtn.classList.toggle('ready', busy || !!field.value.trim() || pendingFiles.length > 0);
+}
+field.addEventListener('input', fit);
+field.addEventListener('keydown', e => {
+  if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); busy ? stopCurrent() : submit(); }
+});
+
+function attachMagnet(el, radius = 80) {
+  const bx = Motion.S(0, 180, 14), by = Motion.S(0, 180, 14), sc = Motion.S(1, 380, 18);
+  let tx = 0, ty = 0;
+  window.addEventListener('pointermove', e => {
+    const r = el.getBoundingClientRect();
+    if (!r.width) return;
+    const dx = e.clientX - (r.left + r.width / 2), dy = e.clientY - (r.top + r.height / 2);
+    const d = Math.hypot(dx, dy);
+    if (d < radius) {
+      const pull = 1 - d / radius * .35;
+      tx = dx * .26 * pull; ty = dy * .3 * pull; sc.t = 1.06;
+    } else { tx = 0; ty = 0; sc.t = 1; }
+  });
+  el.addEventListener('pointerdown', () => { sc.t = .91; });
+  el.addEventListener('pointerup', () => { sc.t = 1; sc.v = 2.4; });
+  Motion.register({
+    frame(dt) { bx.t = tx; by.t = ty; Motion.step(bx, dt); Motion.step(by, dt); Motion.step(sc, dt); },
+    render() { el.style.transform = `translate(${bx.x.toFixed(2)}px,${by.x.toFixed(2)}px) scale(${sc.x.toFixed(4)})`; }
+  });
+}
+attachMagnet(sendBtn, 72);
+
+Motion.register({
+  frame(dt) { [H, SH, M, tkPop, tkRot].forEach(s => Motion.step(s, dt)); },
+  render() {
+    field.style.height = Math.max(24, H.x).toFixed(1) + 'px';
+    pbStatus.style.height = Math.max(0, SH.x * 24).toFixed(1) + 'px';
+    pbStatus.style.opacity = Motion.clamp(SH.x, 0, 1).toFixed(3);
+    const m = M.x;
+    arrowIcon.style.opacity = Motion.clamp(1 - m * 1.4, 0, 1).toFixed(3);
+    arrowIcon.style.transform = `scale(${(1 - .35 * m).toFixed(3)})`;
+    stopIcon.style.opacity = Motion.clamp((m - .3) * 1.4, 0, 1).toFixed(3);
+    stopIcon.style.transform = `scale(${(.65 + .35 * m).toFixed(3)})`;
+    thinkBtn.style.transform = `scale(${tkPop.x.toFixed(4)})`;
+    tkIco.style.transform = `rotate(${tkRot.x.toFixed(2)}deg)`;
+  }
+});
+
+/* ==========================================================================
+   3. GOO THINKING + REAL AI STREAMING + FILE ATTACHMENTS
+   ========================================================================== */
+const activeBubbles = [];
+let statusHideTimer = null, currentStreamTimers = [], abortCtrl = null;
+
+Motion.register({
+  frame(dt) {
+    activeBubbles.forEach(b => {
+      Motion.step(b.enter, dt);
+      if (!b.settled) { Motion.step(b.W, dt); Motion.step(b.H, dt); }
+      Motion.step(b.drop, dt); Motion.step(b.big, dt);
+      Motion.step(b.thinkO, dt); Motion.step(b.innerO, dt);
+      if (b.phase === 'think' && (b.hop -= dt) <= 0) {
+        b.dots[b.k % 3].y.v = -95; b.k++;
+        b.hop = b.k % 3 ? .16 : .46;
+      }
+      b.dots.forEach(d => { Motion.step(d.x, dt); Motion.step(d.y, dt); });
+      b.words.forEach(w => Motion.step(w.s, dt));
+    });
+  },
+  render() {
+    activeBubbles.forEach(b => {
+      b.row.style.opacity = Motion.clamp(b.enter.x, 0, 1).toFixed(3);
+      b.row.style.transform = `translateY(${((1 - b.enter.x) * 16).toFixed(2)}px)`;
+      if (!b.settled) {
+        b.bubble.style.width = b.W.x.toFixed(1) + 'px';
+        b.bubble.style.height = b.H.x.toFixed(1) + 'px';
+      }
+      const s = Motion.clamp(b.drop.x, 0, 1.2) * b.big.x;
+      b.dots.forEach(d => {
+        d.el.style.transform = `translate(${d.x.x.toFixed(2)}px,${(16.5 + d.y.x).toFixed(2)}px) scale(${s.toFixed(3)})`;
+      });
+      b.thinkEl.style.opacity = Motion.clamp(b.thinkO.x, 0, 1).toFixed(3);
+      b.inner.style.opacity = Motion.clamp(b.innerO.x, 0, 1).toFixed(3);
+      b.words.forEach(w => {
+        if (!w.on) return;
+        const v = Motion.clamp(w.s.x, 0, 1.2);
+        w.el.style.opacity = Motion.clamp(v, 0, 1).toFixed(3);
+        w.el.style.transform = `translateY(${((1 - w.s.x) * 7).toFixed(2)}px)`;
+        w.el.style.filter = v < .98 ? `blur(${((1 - Motion.clamp(v, 0, 1)) * 4).toFixed(2)}px)` : 'none';
+      });
+    });
+  }
+});
+
+function formatBytes(str) {
+  const bytes = new Blob([str]).size;
+  return bytes < 1024 ? `${bytes} B` : `${(bytes / 1024).toFixed(1)} KB`;
+}
+
+function downloadFile(name, content) {
+  const baseName = String(name || 'file.txt').split(/[\\/]/).pop() || 'file.txt';
+  const blob = new Blob([content], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = baseName;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+}
+
+const CRC_TABLE = (() => {
+  const t = new Uint32Array(256);
+  for (let i = 0; i < 256; i++) {
+    let c = i;
+    for (let k = 0; k < 8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+    t[i] = c >>> 0;
+  }
+  return t;
+})();
+
+function crc32Bytes(u8) {
+  let c = 0xFFFFFFFF;
+  for (let i = 0; i < u8.length; i++) c = CRC_TABLE[(c ^ u8[i]) & 0xFF] ^ (c >>> 8);
+  return (c ^ 0xFFFFFFFF) >>> 0;
+}
+
+function downloadAllZip(files, zipName = 'sheld-project.zip') {
+  const enc = new TextEncoder();
+  const localParts = [];
+  const centralParts = [];
+  let offset = 0;
+  for (const f of files || []) {
+    const cleanName = String(f.name || 'file.txt').replace(/\\/g, '/').replace(/^\/+/, '');
+    const nameBytes = enc.encode(cleanName);
+    const dataBytes = enc.encode(String(f.content || ''));
+    const crc = crc32Bytes(dataBytes);
+
+    const lh = new ArrayBuffer(30 + nameBytes.length);
+    const lv = new DataView(lh);
+    lv.setUint32(0, 0x04034B50, true);
+    lv.setUint16(4, 20, true);
+    lv.setUint16(6, 0x0800, true);
+    lv.setUint16(8, 0, true);
+    lv.setUint16(10, 0, true);
+    lv.setUint16(12, 0, true);
+    lv.setUint32(14, crc, true);
+    lv.setUint32(18, dataBytes.length, true);
+    lv.setUint32(22, dataBytes.length, true);
+    lv.setUint16(26, nameBytes.length, true);
+    lv.setUint16(28, 0, true);
+    new Uint8Array(lh, 30).set(nameBytes);
+
+    const ch = new ArrayBuffer(46 + nameBytes.length);
+    const cv = new DataView(ch);
+    cv.setUint32(0, 0x02014B50, true);
+    cv.setUint16(4, 20, true);
+    cv.setUint16(6, 20, true);
+    cv.setUint16(8, 0x0800, true);
+    cv.setUint16(10, 0, true);
+    cv.setUint16(12, 0, true);
+    cv.setUint16(14, 0, true);
+    cv.setUint32(16, crc, true);
+    cv.setUint32(20, dataBytes.length, true);
+    cv.setUint32(24, dataBytes.length, true);
+    cv.setUint16(28, nameBytes.length, true);
+    cv.setUint16(30, 0, true);
+    cv.setUint16(32, 0, true);
+    cv.setUint16(34, 0, true);
+    cv.setUint16(36, 0, true);
+    cv.setUint32(38, 0, true);
+    cv.setUint32(42, offset, true);
+    new Uint8Array(ch, 46).set(nameBytes);
+
+    localParts.push(new Uint8Array(lh), dataBytes);
+    centralParts.push(new Uint8Array(ch));
+    offset += 30 + nameBytes.length + dataBytes.length;
+  }
+  const cdSize = centralParts.reduce((s, p) => s + p.length, 0);
+  const eocd = new ArrayBuffer(22);
+  const ev = new DataView(eocd);
+  ev.setUint32(0, 0x06054B50, true);
+  ev.setUint16(4, 0, true);
+  ev.setUint16(6, 0, true);
+  ev.setUint16(8, (files || []).length, true);
+  ev.setUint16(10, (files || []).length, true);
+  ev.setUint32(12, cdSize, true);
+  ev.setUint32(16, offset, true);
+  ev.setUint16(20, 0, true);
+
+  const blob = new Blob([...localParts, ...centralParts, new Uint8Array(eocd)], { type: 'application/zip' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = zipName;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 1200);
+}
+
+function scrollBottom() {
+  const sc = $('chatScroll');
+  sc.scrollTop = sc.scrollHeight;
+}
+
+function escapeHtml(str) {
+  return String(str || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function renderInlineMarkdown(text) {
+  const codeTokens = [];
+  let s = text.replace(/`([^`\n]+)`/g, (_, code) => {
+    const idx = codeTokens.push(`<code>${escapeHtml(code)}</code>`) - 1;
+    return `\u0000CODE${idx}\u0000`;
+  });
+  s = escapeHtml(s);
+  s = s.replace(/\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)/g, '<a href="$2" target="_blank" rel="noopener noreferrer">$1</a>');
+  s = s.replace(/\*\*\*([^*]+)\*\*\*/g, '<strong><em>$1</em></strong>');
+  s = s.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+  s = s.replace(/__([^_]+)__/g, '<strong>$1</strong>');
+  s = s.replace(/(^|[^\w*])\*([^*\n]+)\*(?!\*)/g, '$1<em>$2</em>');
+  s = s.replace(/~~([^~]+)~~/g, '<del>$1</del>');
+  return s.replace(/\u0000CODE(\d+)\u0000/g, (_, idx) => codeTokens[Number(idx)] || '');
+}
+
+function renderMarkdown(raw) {
+  const blocks = [];
+  const src = String(raw || '').replace(/\r\n/g, '\n').replace(/```([a-zA-Z0-9._-]*)\n([\s\S]*?)```/g, (_, _lang, code) => {
+    const idx = blocks.push(`<pre><code>${escapeHtml(code.trimEnd())}</code></pre>`) - 1;
+    return `\n\u0000BLK${idx}\u0000\n`;
+  });
+
+  const lines = src.split('\n');
+  const out = [];
+  let listType = null;
+  let para = [];
+
+  const flushPara = () => {
+    if (!para.length) return;
+    out.push(`<p>${para.map(renderInlineMarkdown).join('<br>')}</p>`);
+    para = [];
+  };
+  const closeList = () => {
+    if (!listType) return;
+    out.push(`</${listType}>`);
+    listType = null;
+  };
+
+  for (const line of lines) {
+    const trimmed = line.trim();
+    const blkMatch = trimmed.match(/^\u0000BLK(\d+)\u0000$/);
+    if (blkMatch) {
+      flushPara();
+      closeList();
+      out.push(blocks[Number(blkMatch[1])] || '');
+      continue;
+    }
+    if (!trimmed) {
+      flushPara();
+      closeList();
+      continue;
+    }
+    const hMatch = trimmed.match(/^(#{1,3})\s+(.+)$/);
+    if (hMatch) {
+      flushPara();
+      closeList();
+      const lvl = hMatch[1].length;
+      out.push(`<h${lvl}>${renderInlineMarkdown(hMatch[2])}</h${lvl}>`);
+      continue;
+    }
+    const ulMatch = trimmed.match(/^(?:[-*•])\s+(.+)$/);
+    if (ulMatch) {
+      flushPara();
+      if (listType !== 'ul') { closeList(); listType = 'ul'; out.push('<ul>'); }
+      out.push(`<li>${renderInlineMarkdown(ulMatch[1])}</li>`);
+      continue;
+    }
+    const olMatch = trimmed.match(/^\d+\.\s+(.+)$/);
+    if (olMatch) {
+      flushPara();
+      if (listType !== 'ol') { closeList(); listType = 'ol'; out.push('<ol>'); }
+      out.push(`<li>${renderInlineMarkdown(olMatch[1])}</li>`);
+      continue;
+    }
+    closeList();
+    para.push(line);
+  }
+  flushPara();
+  closeList();
+  return out.join('');
+}
+
+function wrapWordsForAnim(rootEl) {
+  const words = [];
+  const walker = document.createTreeWalker(rootEl, NodeFilter.SHOW_TEXT);
+  const textNodes = [];
+  let node;
+  while ((node = walker.nextNode())) {
+    if (node.parentElement && node.parentElement.closest('pre')) continue;
+    if (node.nodeValue && node.nodeValue.trim()) textNodes.push(node);
+  }
+  for (const tn of textNodes) {
+    const frag = document.createDocumentFragment();
+    const parts = tn.nodeValue.split(/(\s+)/);
+    for (const part of parts) {
+      if (!part) continue;
+      if (/^\s+$/.test(part)) {
+        frag.appendChild(document.createTextNode(part));
+      } else {
+        const sp = document.createElement('span');
+        sp.className = 'wd';
+        sp.textContent = part;
+        sp.style.opacity = 0;
+        frag.appendChild(sp);
+        words.push({ el: sp, s: Motion.S(0, 340, 26), on: false });
+      }
+    }
+    tn.parentNode.replaceChild(frag, tn);
+  }
+  return words;
+}
+
+function buildUserAttsEl(atts) {
+  if (!atts || !atts.length) return null;
+  const wrap = document.createElement('div');
+  wrap.className = 'u-atts';
+  atts.forEach(a => {
+    if (a.isImage && a.dataUrl) {
+      const img = document.createElement('img');
+      img.className = 'u-img'; img.src = a.dataUrl; img.alt = a.name; img.title = a.name;
+      img.onclick = () => openLightbox(a.dataUrl);
+      wrap.appendChild(img);
+    } else {
+      const pill = document.createElement('div');
+      pill.className = 'u-file';
+      pill.innerHTML = `<span class="u-file-ext">${fileExt(a.name)}</span><span></span><small>${formatFileSize(a.size)}</small>`;
+      pill.querySelector('span:nth-child(2)').textContent = a.name;
+      wrap.appendChild(pill);
+    }
+  });
+  return wrap;
+}
+
+function createFileCard(f) {
+  const isHtml = /\.(html|htm)$/i.test(f.name || '');
+  const card = document.createElement('div');
+  card.className = 'file-card';
+  card.innerHTML = `
+    <div class="file-top">
+      <div class="file-meta">
+        <div class="file-ico"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg></div>
+        <div class="file-names"><b></b><small>${formatBytes(f.content)}</small></div>
+      </div>
+      <div class="file-btns">
+        <button class="pill-sm open-ide-btn">Открыть</button>
+        ${isHtml ? '<button class="pill-sm pv-ide-btn">▶ Превью</button>' : ''}
+        <button class="pill-sm toggle-btn">Код</button>
+        <button class="pill-sm cp-btn">Копировать</button>
+        <button class="pill-dl dl-btn">↓ Скачать</button>
+      </div>
+    </div>
+    <pre class="file-code"></pre>`;
+  card.querySelector('.file-names b').textContent = f.name;
+  card.querySelector('.file-code').textContent = f.content;
+
+  const openIdeBtn = card.querySelector('.open-ide-btn');
+  if (openIdeBtn) openIdeBtn.onclick = () => {
+    if (window.SheldIDE) window.SheldIDE.openGeneratedFile(f.name, f.content, false);
+  };
+  const pvIdeBtn = card.querySelector('.pv-ide-btn');
+  if (pvIdeBtn) pvIdeBtn.onclick = () => {
+    if (window.SheldIDE) window.SheldIDE.openGeneratedFile(f.name, f.content, true);
+  };
+  const toggleBtn = card.querySelector('.toggle-btn');
+  toggleBtn.onclick = () => {
+    card.classList.toggle('expanded');
+    toggleBtn.textContent = card.classList.contains('expanded') ? 'Скрыть' : 'Код';
+  };
+  const cpBtn = card.querySelector('.cp-btn');
+  cpBtn.onclick = () => {
+    navigator.clipboard?.writeText(f.content);
+    cpBtn.textContent = '✓ Скопировано';
+    cpBtn.classList.add('ok');
+    Motion.after(1.6, () => { cpBtn.textContent = 'Копировать'; cpBtn.classList.remove('ok'); });
+  };
+  const dlBtn = card.querySelector('.dl-btn');
+  attachMagnet(dlBtn, 64);
+  dlBtn.onclick = () => {
+    downloadFile(f.name, f.content);
+    dlBtn.textContent = '✓ Скачано';
+    dlBtn.classList.add('ok');
+    Motion.after(1.8, () => { dlBtn.textContent = '↓ Скачать'; dlBtn.classList.remove('ok'); });
+  };
+  return card;
+}
+
+function renderFilesWrap(wrapEl, files) {
+  if (!wrapEl || !Array.isArray(files) || !files.length) return;
+  if (files.length >= 2) {
+    const bar = document.createElement('div');
+    bar.style.cssText = 'display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 12px;border-radius:10px;background:rgba(16,185,129,.10);border:1px solid rgba(16,185,129,.28);font-size:12.5px;';
+    bar.innerHTML = `<span>Прикреплено файлов: <b>${files.length}</b> (скачай в одну папку и запускай)</span>`;
+    const zipBtn = document.createElement('button');
+    zipBtn.type = 'button';
+    zipBtn.className = 'pill-dl';
+    zipBtn.textContent = '↓ Скачать всё (.zip)';
+    zipBtn.onclick = () => {
+      downloadAllZip(files);
+      zipBtn.textContent = '✓ Архив скачан';
+      zipBtn.classList.add('ok');
+      Motion.after(1.8, () => { zipBtn.textContent = '↓ Скачать всё (.zip)'; zipBtn.classList.remove('ok'); });
+    };
+    bar.appendChild(zipBtn);
+    wrapEl.appendChild(bar);
+  }
+  files.forEach(f => wrapEl.appendChild(createFileCard(f)));
+}
+
+function buildApiContent(val, atts) {
+  if (!atts.length) return val;
+  const desc = atts.map(a => {
+    const head = `${a.name} (${a.isImage ? (a.dims ? `image ${a.dims}, ` : 'image, ') : ''}${formatFileSize(a.size)})`;
+    return a.excerpt ? `${head}:\n${a.excerpt}` : head;
+  }).join('\n');
+  return `[Прикреплено пользователем:\n${desc.slice(0, 100000)}]\n${val || 'Посмотри прикреплённые файлы.'}`;
+}
+
+function buildAgentTraceEl(initialTrace, isLive) {
+  const root = document.createElement('div');
+  root.className = 'agent-trace' + (isLive ? ' open' : (initialTrace ? ' done' : ''));
+  root.innerHTML = `
+    <div class="at-head">
+      <span class="at-ico">
+        <span class="at-spin"></span>
+        <svg class="at-check" viewBox="0 0 24 24"><path d="M5 12.5l4.2 4.3L19 7"/></svg>
+      </span>
+      <span class="at-title">Thinking…</span>
+      <span class="at-meta">
+        <span class="at-badge" style="display:none"></span>
+        <svg class="at-chev" viewBox="0 0 24 24"><path d="M7 10l5 5 5-5"/></svg>
+      </span>
+    </div>
+    <div class="at-body"><div class="at-body-in"><div class="at-content">
+      <div class="at-steps"></div>
+      <div class="at-thought-box">
+        <span class="at-sub">Thinking</span>
+        <div class="at-thought"></div>
+      </div>
+      <div class="at-edits"></div>
+    </div></div></div>`;
+
+  const head = root.querySelector('.at-head');
+  const titleEl = root.querySelector('.at-title');
+  const badgeEl = root.querySelector('.at-badge');
+  const stepsEl = root.querySelector('.at-steps');
+  const thoughtBox = root.querySelector('.at-thought-box');
+  const thoughtEl = root.querySelector('.at-thought');
+  const editsEl = root.querySelector('.at-edits');
+
+  head.onclick = () => root.classList.toggle('open');
+
+  const stepMap = new Map();
+  const editMap = new Map();
+  const startAt = performance.now();
+  let timerId = null;
+
+  if (isLive) {
+    timerId = setInterval(() => {
+      const sec = ((performance.now() - startAt) / 1000).toFixed(1);
+      titleEl.textContent = `Thinking · ${sec}с`;
+    }, 100);
+  }
+
+  function setPhase(ev) {
+    let row = stepMap.get(ev.id);
+    if (!row) {
+      row = document.createElement('div');
+      row.className = 'at-step';
+      row.innerHTML = `<span class="at-step-dot"></span><span class="at-step-txt"></span>`;
+      stepsEl.appendChild(row);
+      stepMap.set(ev.id, row);
+    }
+    row.className = 'at-step ' + (ev.status || 'active');
+    row.querySelector('.at-step-txt').textContent = ev.title || '';
+    let tag = row.querySelector('.at-step-tag');
+    if (ev.detail) {
+      if (!tag) {
+        tag = document.createElement('span');
+        tag.className = 'at-step-tag';
+        row.appendChild(tag);
+      }
+      tag.textContent = ev.detail;
+    } else if (tag) {
+      tag.remove();
+    }
+  }
+
+  function appendThought(txt) {
+    if (!txt) return;
+    thoughtBox.classList.add('show');
+    const next = thoughtEl.textContent + txt;
+    thoughtEl.textContent = next.length > 24000 ? next.slice(-18000) : next;
+    thoughtEl.scrollTop = thoughtEl.scrollHeight;
+  }
+
+  function startFileEdit(name, op) {
+    editsEl.classList.add('show');
+    // Collapse previously writing cards when switching to a new file
+    for (const [k, prevCard] of editMap.entries()) {
+      if (k !== name && prevCard.classList.contains('writing')) {
+        prevCard.classList.remove('writing');
+        prevCard.classList.add('collapsed');
+      }
+    }
+    let card = editMap.get(name);
+    if (!card) {
+      card = document.createElement('div');
+      card.className = 'at-edit writing';
+      card.innerHTML = `
+        <div class="at-edit-head">
+          <span class="at-edit-op"></span>
+          <span class="at-edit-name"></span>
+          <span class="at-edit-stat"><span>+0 строк</span><small></small></span>
+        </div>
+        <pre class="at-edit-code" style="display:none"></pre>`;
+      card.querySelector('.at-edit-head').onclick = () => card.classList.toggle('collapsed');
+      editsEl.appendChild(card);
+      editMap.set(name, card);
+    } else if (!card.classList.contains('done')) {
+      card.classList.add('writing');
+      card.classList.remove('collapsed');
+    }
+    const opEl = card.querySelector('.at-edit-op');
+    if (!card.classList.contains('done')) {
+      opEl.textContent = op === 'edit' ? 'Пишет правку' : 'Пишет';
+      opEl.className = 'at-edit-op ' + (op === 'edit' ? 'edit' : 'create');
+    }
+    card.querySelector('.at-edit-name').textContent = name;
+  }
+
+  function markFileDone(ev) {
+    startFileEdit(ev.name, ev.op);
+    const card = editMap.get(ev.name);
+    if (!card) return;
+    card.classList.remove('writing');
+    card.classList.add('done');
+    const opEl = card.querySelector('.at-edit-op');
+    opEl.textContent = '✓ Готов';
+    opEl.className = 'at-edit-op done';
+    if (ev.lines) card.querySelector('.at-edit-stat span').textContent = `${ev.lines} строк`;
+    if (ev.bytes) card.querySelector('.at-edit-stat small').textContent = (ev.bytes / 1024).toFixed(1) + ' КБ';
+  }
+
+  function updateFileEdit(ev) {
+    startFileEdit(ev.name, ev.op);
+    const card = editMap.get(ev.name);
+    const stat = card.querySelector('.at-edit-stat span');
+    const sizeEl = card.querySelector('.at-edit-stat small');
+    stat.textContent = `+${ev.lines || 0} строк`;
+    if (ev.bytes) sizeEl.textContent = (ev.bytes / 1024).toFixed(1) + ' КБ';
+    badgeEl.style.display = '';
+    badgeEl.textContent = `${ev.name} +${ev.lines || 0}`;
+    if (ev.tail) {
+      const pre = card.querySelector('.at-edit-code');
+      pre.style.display = 'block';
+      card.classList.remove('collapsed');
+      pre.innerHTML = '';
+      ev.tail.split('\n').forEach(line => {
+        const sp = document.createElement('span');
+        sp.className = 'at-edit-line';
+        sp.textContent = '+ ' + line;
+        pre.appendChild(sp);
+      });
+      pre.scrollTop = pre.scrollHeight;
+    }
+  }
+
+  function finishTrace(trace) {
+    if (timerId) { clearInterval(timerId); timerId = null; }
+    root.classList.add('done');
+    const sec = (((trace && trace.durationMs) || (performance.now() - startAt)) / 1000).toFixed(1);
+    const count = (trace && trace.steps?.length) || stepMap.size;
+    titleEl.textContent = `Думал ${sec}с` + (count ? ` · ${count} этап.` : '');
+    [...stepsEl.querySelectorAll('.at-step.active')].forEach(el => el.className = 'at-step done');
+    for (const c of editMap.values()) c.classList.remove('writing');
+  }
+
+  if (initialTrace) {
+    (initialTrace.steps || []).forEach(s => setPhase(s));
+    if (initialTrace.thought) appendThought(initialTrace.thought);
+    (initialTrace.edits || []).forEach(ed => {
+      startFileEdit(ed.name, ed.op);
+      markFileDone({ name: ed.name, op: ed.op, lines: ed.lines || 0 });
+    });
+    finishTrace(initialTrace);
+  }
+
+  return { root, setPhase, appendThought, startFileEdit, updateFileEdit, markFileDone, finishTrace };
+}
+
+async function submit() {
+  const val = field.value.trim();
+  if ((!val && pendingFiles.length === 0) || busy) return;
+  if (curModel.tier === 'free') {
+    if (sheltonQuota <= 0) { openGate('chat'); return; }
+    sheltonQuota--;
+  } else {
+    if (!guestDone || !trialActive || proQuota <= 0) { openGate('chat'); return; }
+    proQuota--;
+  }
+  updateModelTag();
+  renderModelMenu();
+
+  const atts = pendingFiles.slice();
+  pendingFiles = [];
+  renderAttTray();
+
+  busy = true; M.t = 1; SH.t = 1;
+  if (statusHideTimer) { Motion.cancel(statusHideTimer); statusHideTimer = null; }
+  pbStatus.className = 'pb-status think';
+  pbLabel.textContent = `${curModel.name} думает...`;
+  $('stage').classList.add('started');
+  field.value = ''; fit();
+
+  const apiContent = buildApiContent(val, atts);
+  history.push({ role: 'user', content: apiContent });
+
+  const modelSnap = curModel;
+  const userTurn = {
+    role: 'user',
+    text: val,
+    apiContent,
+    atts: atts.map(({ name, size, isImage, dataUrl, dims }) => ({ name, size, isImage, dataUrl, dims }))
+  };
+  saveTurnToChat(userTurn, null, modelSnap);
+
+  const msgs = $('msgs');
+  const uRow = document.createElement('div');
+  uRow.className = 'msg-row user';
+  const uAtts = buildUserAttsEl(atts);
+  if (uAtts) uRow.appendChild(uAtts);
+  let uBub = null;
+  if (val) {
+    uBub = document.createElement('div');
+    uBub.className = 'u-bubble';
+    uBub.textContent = val;
+    uRow.appendChild(uBub);
+  }
+  msgs.appendChild(uRow);
+  const uS = Motion.S(0, 320, 22); uS.t = 1;
+  Motion.register({
+    frame(dt) { Motion.step(uS, dt); },
+    render() {
+      uRow.style.opacity = Motion.clamp(uS.x, 0, 1).toFixed(3);
+      uRow.style.transform = `translateY(${((1 - uS.x) * 14).toFixed(2)}px) scale(${(.94 + .06 * uS.x).toFixed(4)})`;
+    }
+  });
+
+  const aiRow = document.createElement('div');
+  aiRow.className = 'msg-row ai';
+  aiRow.innerHTML = `
+    <div class="ai-head"><span class="mini-orb" data-av="${modelSnap.av}"></span><span>${modelSnap.name}</span></div>
+    <div class="ai-bubble">
+      <div class="goo-layer"><i></i><i></i><i></i></div>
+      <span class="think-label">Thinking</span>
+      <div class="reply-inner" style="position:absolute;left:0;top:0;opacity:0;pointer-events:none">
+        <div class="reply-text"></div>
+        <div class="files-wrap"></div>
+      </div>
+    </div>`;
+  msgs.appendChild(aiRow);
+
+  const traceUi = (modelSnap.id !== 'shelton') ? buildAgentTraceEl(null, true) : null;
+  if (traceUi) {
+    aiRow.insertBefore(traceUi.root, aiRow.querySelector('.ai-bubble'));
+  }
+
+  const bubble = aiRow.querySelector('.ai-bubble');
+  const gooDots = [...aiRow.querySelectorAll('.goo-layer i')].map((el, i) => ({
+    el, x: Motion.S(16 + i * 13, 300, 22), y: Motion.S(0, 420, 14), i
+  }));
+  const thinkEl = aiRow.querySelector('.think-label');
+  const inner = aiRow.querySelector('.reply-inner');
+  const textEl = aiRow.querySelector('.reply-text');
+  const filesWrap = aiRow.querySelector('.files-wrap');
+
+  const targetW = Math.min(620, $('chatScroll').clientWidth - 40);
+  inner.style.width = targetW + 'px';
+
+  const bObj = {
+    row: aiRow, bubble, thinkEl, inner, dots: gooDots, words: [],
+    enter: Motion.S(0, 300, 22),
+    W: Motion.S(156, 250, 25), H: Motion.S(42, 250, 25),
+    drop: Motion.S(1, 300, 26), big: Motion.S(1, 300, 24),
+    thinkO: Motion.S(1, 300, 28), innerO: Motion.S(0, 280, 28),
+    phase: 'think', hop: .2, k: 0, settled: false
+  };
+  activeBubbles.push(bObj);
+  Motion.after(.12, () => { bObj.enter.t = 1; scrollBottom(); });
+
+  const images = atts.filter(a => a.isImage && a.dataUrl).slice(0, 3).map(a => a.dataUrl);
+
+  abortCtrl = new AbortController();
+  let data = null;
+  try {
+    const ideCtx = window.SheldIDE ? window.SheldIDE.getChatContext() : {};
+    const resp = await fetch('/api/chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      signal: abortCtrl.signal,
+      body: JSON.stringify({
+        messages: history,
+        images,
+        modelId: modelSnap.id,
+        thinkLevel,
+        stream: true,
+        sessionId: ideCtx.sessionId || '',
+        activeFile: ideCtx.activeFile || null
+      })
+    });
+    if (!resp.ok) {
+      const errJson = await resp.json().catch(() => ({}));
+      throw new Error(errJson.error || 'API error');
+    }
+    const ct = resp.headers.get('content-type') || '';
+    if (ct.includes('ndjson') && resp.body) {
+      const reader = resp.body.getReader();
+      const dec = new TextDecoder();
+      let buf = '';
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+        buf += dec.decode(value, { stream: true });
+        let nl;
+        while ((nl = buf.indexOf('\n')) !== -1) {
+          const line = buf.slice(0, nl).trim();
+          buf = buf.slice(nl + 1);
+          if (!line) continue;
+          let ev;
+          try { ev = JSON.parse(line); } catch { continue; }
+          if (ev.type === 'phase') {
+            if (traceUi) traceUi.setPhase(ev);
+            if (ev.status === 'active') pbLabel.textContent = ev.title || 'Thinking';
+            scrollBottom();
+          } else if (ev.type === 'think_delta') {
+            if (traceUi) traceUi.appendThought(ev.text);
+          } else if (ev.type === 'file_start') {
+            if (traceUi) traceUi.startFileEdit(ev.name, ev.op);
+            pbLabel.textContent = (ev.op === 'edit' ? 'Правка ' : 'Создаёт ') + ev.name + '…';
+            scrollBottom();
+          } else if (ev.type === 'file_delta') {
+            if (traceUi) traceUi.updateFileEdit(ev);
+            pbLabel.textContent = `Пишет ${ev.name} · +${ev.lines || 0} строк`;
+          } else if (ev.type === 'file_done') {
+            if (traceUi) traceUi.markFileDone(ev);
+            pbLabel.textContent = `Файл ${ev.name} готов`;
+            scrollBottom();
+          } else if (ev.type === 'file_applied') {
+            pbLabel.textContent = `Записан в проект: ${ev.name}`;
+            if (window.SheldIDE) window.SheldIDE.refreshTree();
+          } else if (ev.type === 'done') {
+            data = ev.data;
+          } else if (ev.type === 'error') {
+            throw new Error(ev.error || 'Stream error');
+          }
+        }
+      }
+      if (!data) throw new Error('Пустой ответ потока');
+    } else {
+      data = await resp.json();
+      if (data.error) throw new Error(data.error);
+    }
+  } catch (err) {
+    if (err.name === 'AbortError') {
+      if (traceUi) traceUi.finishTrace(null);
+      return;
+    }
+    const msg = String(err && err.message || 'Ошибка соединения');
+    const isLocalDown = /Failed to fetch|NetworkError|ERR_CONNECTION_REFUSED/i.test(msg);
+    const isUpstreamBusy = /429|502|503|504|Upstream|timeout/i.test(msg);
+    data = {
+      reply: isLocalDown
+        ? `Не удалось связаться с локальным сервером ${modelSnap.name}: ${msg}.`
+        : isUpstreamBusy
+          ? `Узел ${modelSnap.name} на fastapicloud временно перегружен (${msg}). Баланс не списан — повтори запрос через пару секунд.`
+          : `Ошибка ${modelSnap.name}: ${msg}`,
+      files: [],
+      trace: null
+    };
+  }
+
+  if (traceUi) traceUi.finishTrace(data.trace);
+  const replyText = data.reply || 'Готово!';
+  const files = Array.isArray(data.files) ? data.files : [];
+  if (window.SheldIDE) window.SheldIDE.onAiResponse(data, files);
+  const histContent = files.length
+    ? `${replyText}\n\n${files.map(f => `<file name="${f.name}">\n${String(f.content || '').slice(0, 90000)}\n</file>`).join('\n')}`
+    : replyText;
+  history.push({ role: 'assistant', content: histContent });
+
+  const savedTrace = (traceUi && data.trace) ? data.trace : null;
+  saveTurnToChat(null, { role: 'assistant', text: replyText, files, trace: savedTrace, modelId: modelSnap.id, modelName: modelSnap.name, modelAv: modelSnap.av }, modelSnap);
+
+  /* Render Markdown safely and wrap words for spring reveal */
+  textEl.innerHTML = renderMarkdown(replyText);
+  const words = wrapWordsForAnim(textEl);
+  bObj.words = words;
+
+  if (files.length > 0) filesWrap.classList.add('has-files');
+  renderFilesWrap(filesWrap, files);
+
+  currentStreamTimers = [];
+  const regT = (s, fn) => { const t = Motion.after(s, fn); currentStreamTimers.push(t); return t; };
+
+  /* Merge goo dots -> sink -> spring expand -> stream words */
+  bObj.phase = 'merge';
+  bObj.dots.forEach(d => { d.x.t = 30; d.y.t = 0; });
+  bObj.big.t = 1.45;
+  bObj.thinkO.t = 0;
+  regT(.3, () => { bObj.drop.t = 0; });
+  regT(.42, () => {
+    bObj.phase = 'stream';
+    inner.style.width = 'max-content';
+    inner.style.maxWidth = targetW + 'px';
+    const fitW = Math.min(targetW, Math.max(files.length > 0 ? 360 : 56, Math.ceil(inner.getBoundingClientRect().width) + 2));
+    inner.style.width = fitW + 'px';
+    inner.style.position = 'relative';
+    inner.style.pointerEvents = 'auto';
+    bObj.innerO.t = 1;
+    bObj.W.t = fitW;
+    bObj.H.t = 46;
+
+    const stepDelay = Math.min(0.038, 1.4 / Math.max(words.length, 1));
+    words.forEach((w, idx) => regT(idx * stepDelay, () => {
+      w.on = true; w.s.t = 1;
+      bObj.H.t = Math.max(46, textEl.offsetTop + w.el.offsetTop + w.el.offsetHeight + 12);
+      scrollBottom();
+    }));
+
+    regT(words.length * stepDelay + .18, () => {
+      if (files.length > 0) filesWrap.classList.add('show');
+      bObj.H.t = inner.scrollHeight;
+      scrollBottom();
+      finishReply(files.length > 0);
+      regT(.65, () => {
+        bObj.settled = true;
+        inner.style.width = 'auto';
+        inner.style.maxWidth = targetW + 'px';
+        bubble.style.width = 'auto';
+        bubble.style.maxWidth = targetW + 'px';
+        bubble.style.height = 'auto';
+      });
+    });
+  });
+}
+
+function finishReply(hasFiles) {
+  busy = false; M.t = 0; abortCtrl = null;
+  pbStatus.className = 'pb-status done';
+  pbLabel.textContent = hasFiles ? 'Файлы прикреплены · Готово' : 'Готово';
+  sendBtn.classList.toggle('ready', !!field.value.trim() || pendingFiles.length > 0);
+  statusHideTimer = Motion.after(2.2, () => { SH.t = 0; });
+}
+
+function stopCurrent() {
+  if (abortCtrl) { abortCtrl.abort(); abortCtrl = null; }
+  currentStreamTimers.forEach(Motion.cancel);
+  currentStreamTimers = [];
+  busy = false; M.t = 0;
+  pbStatus.className = 'pb-status done';
+  pbLabel.textContent = 'Остановлено';
+  sendBtn.classList.toggle('ready', !!field.value.trim() || pendingFiles.length > 0);
+  statusHideTimer = Motion.after(1.2, () => { SH.t = 0; });
+}
+sendBtn.onclick = () => busy ? stopCurrent() : submit();
+
+/* ==========================================================================
+   4. CHAT HISTORY + THEME + NEW CHAT
+   ========================================================================== */
+const STORAGE_KEY = 'sheld_chats_v1';
+const THEME_KEY = 'sheld_theme_v1';
+const historyBtn = $('historyBtn'), historyMenu = $('historyMenu'), histList = $('histList'), histClearBtn = $('histClearBtn');
+let curChatId = null;
+
+function loadChats() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+    return Array.isArray(raw) ? raw : [];
+  } catch { return []; }
+}
+let chats = loadChats();
+
+function persistChats() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(chats.slice(0, 25)));
+  } catch {}
+}
+function formatTime(ts) {
+  try {
+    return new Date(ts).toLocaleTimeString('ru-RU', { hour: '2-digit', minute: '2-digit' });
+  } catch { return ''; }
+}
+function saveTurnToChat(userTurn, aiTurn, modelSnap) {
+  if (!curChatId) {
+    curChatId = 'c_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6);
+    const titleSrc = userTurn?.text || userTurn?.atts?.[0]?.name || 'Новый диалог';
+    chats.unshift({
+      id: curChatId,
+      title: titleSrc.slice(0, 56),
+      modelId: modelSnap.id,
+      modelName: modelSnap.name,
+      modelAv: modelSnap.av,
+      updatedAt: Date.now(),
+      turns: []
+    });
+  }
+  const chat = chats.find(c => c.id === curChatId);
+  if (!chat) return;
+  if (userTurn) chat.turns.push(userTurn);
+  if (aiTurn) chat.turns.push(aiTurn);
+  chat.modelId = modelSnap.id;
+  chat.modelName = modelSnap.name;
+  chat.modelAv = modelSnap.av;
+  chat.updatedAt = Date.now();
+  chats = [chat, ...chats.filter(c => c.id !== chat.id)];
+  persistChats();
+  renderHistoryList();
+}
+
+function toggleHistory(open) {
+  const s = open ?? !historyMenu.classList.contains('open');
+  if (s) toggleMenu(false);
+  historyMenu.classList.toggle('open', s);
+  historyBtn.setAttribute('aria-expanded', s);
+}
+function renderHistoryList() {
+  histClearBtn.style.display = chats.length ? '' : 'none';
+  if (!chats.length) {
+    histList.innerHTML = '<div class="hist-empty">Пока нет сохранённых чатов</div>';
+    return;
+  }
+  histList.innerHTML = '';
+  chats.forEach(c => {
+    const row = document.createElement('div');
+    row.className = 'hist-row' + (c.id === curChatId ? ' on' : '');
+    row.innerHTML = `
+      <span class="orb" data-av="${c.modelAv || '1'}" style="width:22px;height:22px"></span>
+      <span class="hist-info"><b></b><small>${c.modelName || 'Fable 5.2'} · ${c.turns.length} сообщ. · ${formatTime(c.updatedAt)}</small></span>
+      <button class="hist-del" type="button" title="Удалить"><svg viewBox="0 0 24 24"><path d="M18 6L6 18M6 6l12 12"/></svg></button>`;
+    row.querySelector('.hist-info b').textContent = c.title || 'Диалог';
+    row.onclick = () => { openChat(c.id); toggleHistory(false); };
+    row.querySelector('.hist-del').onclick = e => {
+      e.stopPropagation();
+      chats = chats.filter(x => x.id !== c.id);
+      persistChats();
+      if (curChatId === c.id) startNewChat();
+      else renderHistoryList();
+    };
+    histList.appendChild(row);
+  });
+}
+
+function openChat(id) {
+  const chat = chats.find(c => c.id === id);
+  if (!chat) return;
+  if (busy) stopCurrent();
+  curChatId = chat.id;
+  history = [];
+  const msgs = $('msgs');
+  msgs.innerHTML = '';
+  $('stage').classList.add('started');
+
+  const m = MODELS.find(x => x.id === chat.modelId);
+  if (m && (trialActive || m.tier === 'free')) {
+    curModel = m;
+    $('modelName').textContent = curModel.name;
+    $('modelOrb').dataset.av = curModel.av;
+    $('heroOrb').dataset.av = curModel.av;
+    updateModelTag();
+    renderModelMenu();
+  }
+
+  chat.turns.forEach(t => {
+    if (t.role === 'user') {
+      history.push({ role: 'user', content: t.apiContent || t.text || '' });
+      const uRow = document.createElement('div');
+      uRow.className = 'msg-row user';
+      const uAtts = buildUserAttsEl(t.atts);
+      if (uAtts) uRow.appendChild(uAtts);
+      if (t.text) {
+        const uBub = document.createElement('div');
+        uBub.className = 'u-bubble';
+        uBub.textContent = t.text;
+        uRow.appendChild(uBub);
+      }
+      msgs.appendChild(uRow);
+    } else {
+      const tFiles = Array.isArray(t.files) ? t.files : [];
+      const histContent = tFiles.length
+        ? `${t.text || ''}\n\n${tFiles.map(f => `<file name="${f.name}">\n${String(f.content || '').slice(0, 90000)}\n</file>`).join('\n')}`
+        : (t.text || '');
+      history.push({ role: 'assistant', content: histContent });
+      const aiRow = document.createElement('div');
+      aiRow.className = 'msg-row ai';
+      aiRow.innerHTML = `
+        <div class="ai-head"><span class="mini-orb" data-av="${t.modelAv || '1'}"></span><span>${t.modelName || 'Fable 5.2'}</span></div>
+        <div class="ai-bubble" style="max-width:620px">
+          <div class="reply-inner">
+            <div class="reply-text"></div>
+            <div class="files-wrap${t.files?.length ? ' show' : ''}"></div>
+          </div>
+        </div>`;
+      aiRow.querySelector('.reply-text').innerHTML = renderMarkdown(t.text || '');
+      if (t.trace) {
+        aiRow.insertBefore(buildAgentTraceEl(t.trace, false).root, aiRow.querySelector('.ai-bubble'));
+      }
+      const fw = aiRow.querySelector('.files-wrap');
+      renderFilesWrap(fw, t.files || []);
+      msgs.appendChild(aiRow);
+    }
+  });
+  renderHistoryList();
+  scrollBottom();
+}
+
+function startNewChat() {
+  if (busy) stopCurrent();
+  curChatId = null;
+  history = [];
+  pendingFiles = [];
+  renderAttTray();
+  $('msgs').innerHTML = '';
+  $('stage').classList.remove('started');
+  field.value = '';
+  fit();
+  renderHistoryList();
+  field.focus();
+}
+
+historyBtn.onclick = e => { e.stopPropagation(); toggleHistory(); };
+histClearBtn.onclick = e => {
+  e.stopPropagation();
+  chats = [];
+  persistChats();
+  startNewChat();
+  toggleHistory(false);
+};
+document.addEventListener('click', e => {
+  if (!e.target.closest('.top-actions')) toggleHistory(false);
+});
+$('newChatBtn').onclick = startNewChat;
+
+try {
+  const savedTheme = localStorage.getItem(THEME_KEY);
+  if (savedTheme === 'light' || savedTheme === 'dark') document.documentElement.dataset.theme = savedTheme;
+} catch {}
+$('themeBtn').onclick = () => {
+  const h = document.documentElement;
+  h.dataset.theme = h.dataset.theme === 'dark' ? 'light' : 'dark';
+  try { localStorage.setItem(THEME_KEY, h.dataset.theme); } catch {}
+};
+
+document.addEventListener('keydown', e => {
+  const m = e.metaKey || e.ctrlKey, k = e.key.toLowerCase();
+  if (m && k === 'm') { e.preventDefault(); toggleMenu(); }
+  if (e.key === 'Escape') { toggleHistory(false); toggleMenu(false); imgLb.classList.remove('show'); closeGate(); }
+});
+renderHistoryList();
+
+/* ==========================================================================
+   5. AUTH (GUEST) -> PAYWALL / 3-DAY TRIAL GATE (Loading > Success Skill)
+   ========================================================================== */
+const gateOv = $('gateOv'), stepAuth = $('stepAuth'), stepPlan = $('stepPlan');
+const authHint = $('authHint'), planHint = $('planHint'), payBtn = $('payBtn');
+const appleForm = $('appleForm'), cardForm = $('cardForm');
+const netPills = document.querySelectorAll('.net-pill');
+
+function shakeForm(form, hintEl, msg) {
+  form.classList.remove('shake');
+  void form.offsetWidth;
+  form.classList.add('shake');
+  hintEl.textContent = msg;
+  hintEl.classList.add('show');
+}
+let gateOrigin = 'menu';
+function showStep(step) {
+  stepAuth.classList.toggle('on', step === 'auth');
+  stepPlan.classList.toggle('on', step === 'plan');
+}
+function openGate(origin = 'menu') {
+  gateOrigin = origin;
+  showStep(guestDone ? 'plan' : 'auth');
+  authHint.classList.remove('show');
+  planHint.classList.remove('show');
+  appleForm.classList.remove('open', 'shake');
+  cardForm.classList.remove('open', 'shake');
+  gateOv.classList.add('show');
+}
+function closeGate() {
+  gateOv.classList.remove('show');
+}
+$('gateClose').onclick = closeGate;
+gateOv.onclick = e => { if (e.target.id === 'gateOv') closeGate(); };
+
+$('appleToggleBtn').onclick = () => {
+  const open = appleForm.classList.toggle('open');
+  authHint.classList.remove('show');
+  if (open) $('appleEmail').focus();
+};
+
+let appleBusy = false;
+appleForm.onsubmit = e => {
+  e.preventDefault();
+  if (appleBusy) return;
+  const email = $('appleEmail').value.trim();
+  const pass = $('applePass').value.trim();
+  if (!email || !pass) {
+    shakeForm(appleForm, authHint, 'Введите Apple ID и пароль');
+    return;
+  }
+  appleBusy = true;
+  const sub = $('appleSubmit');
+  sub.textContent = 'Проверка...';
+  authHint.classList.remove('show');
+  Motion.after(0.6, () => {
+    appleBusy = false;
+    sub.textContent = 'Войти';
+    shakeForm(appleForm, authHint, 'Некорректный Apple ID или пароль');
+  });
+};
+
+let selectedPrice = '$20';
+document.querySelectorAll('.plan-card').forEach(card => {
+  card.onclick = () => {
+    document.querySelectorAll('.plan-card').forEach(c => c.classList.remove('on'));
+    card.classList.add('on');
+    selectedPrice = card.dataset.price;
+    payBtn.textContent = `Оплатить ${selectedPrice} картой`;
+    $('cardSubmit').textContent = `Оплатить ${selectedPrice}`;
+    planHint.classList.remove('show');
+  };
+});
+
+payBtn.onclick = () => {
+  const open = cardForm.classList.toggle('open');
+  planHint.classList.remove('show');
+  if (open) $('cardNum').focus();
+};
+
+$('cardNum').oninput = e => {
+  const digits = e.target.value.replace(/\D/g, '').slice(0, 16);
+  e.target.value = digits.replace(/(.{4})/g, '$1 ').trim();
+  let net = '';
+  if (/^4/.test(digits)) net = 'visa';
+  else if (/^220[0-4]/.test(digits)) net = 'mir';
+  else if (/^5|^2/.test(digits)) net = 'mc';
+  else if (/^62/.test(digits)) net = 'up';
+  netPills.forEach(p => p.classList.toggle('active', p.dataset.net === net));
+};
+$('cardExp').oninput = e => {
+  const d = e.target.value.replace(/\D/g, '').slice(0, 4);
+  e.target.value = d.length > 2 ? d.slice(0, 2) + '/' + d.slice(2) : d;
+};
+$('cardCvc').oninput = e => {
+  e.target.value = e.target.value.replace(/\D/g, '').slice(0, 4);
+};
+
+let cardBusy = false;
+cardForm.onsubmit = e => {
+  e.preventDefault();
+  if (cardBusy) return;
+  const num = $('cardNum').value.replace(/\D/g, '');
+  const exp = $('cardExp').value.replace(/\D/g, '');
+  const cvc = $('cardCvc').value.replace(/\D/g, '');
+  if (num.length < 13 || exp.length < 4 || cvc.length < 3) {
+    shakeForm(cardForm, planHint, 'Введите корректные реквизиты карты');
+    return;
+  }
+  cardBusy = true;
+  const sub = $('cardSubmit');
+  sub.textContent = 'Проверка карты...';
+  planHint.classList.remove('show');
+  Motion.after(0.7, () => {
+    cardBusy = false;
+    sub.textContent = `Оплатить ${selectedPrice}`;
+    shakeForm(cardForm, planHint, 'Карта не принята. Проверьте данные или активируйте Trial на 3 дня');
+  });
+};
+
+/* Reusable DesignBookmark Loading > Success Morph Pill */
+function setupMorphBtn(btn, durationSec, onSuccess) {
+  const txt = btn.querySelector('.m-txt'), spin = btn.querySelector('.m-spin');
+  const done = btn.querySelector('.m-done'), tick = btn.querySelector('.m-tick');
+  const len = 22;
+  tick.style.strokeDasharray = len;
+  tick.style.strokeDashoffset = len;
+
+  const fullW = 352;
+  const W = Motion.S(fullW, 300, 22), T = Motion.S(1, 400, 30);
+  const P = Motion.S(0, 300, 28), D = Motion.S(0, 220, 20);
+  const G = Motion.S(0, 200, 30), K = Motion.S(0, 120, 20);
+  let state = 'idle', rot = 0;
+
+  Motion.register({
+    frame(dt) {
+      rot += dt * 360 * 1.4;
+      [W, T, P, D, G, K].forEach(s => Motion.step(s, dt));
+    },
+    render() {
+      if (state === 'idle') {
+        btn.style.width = '100%';
+      } else {
+        btn.style.width = W.x.toFixed(2) + 'px';
+      }
+      const g = Motion.clamp(G.x, 0, 1);
+      btn.style.background = g > .01 ? `color-mix(in srgb, var(--green) ${(g * 100).toFixed(1)}%, var(--inverse))` : '';
+      txt.style.opacity = Motion.clamp(T.x, 0, 1).toFixed(3);
+      txt.style.transform = `translateY(${((1 - T.x) * 14).toFixed(2)}px)`;
+      spin.style.opacity = Motion.clamp(P.x, 0, 1).toFixed(3);
+      spin.style.transform = `rotate(${rot % 360}deg) scale(${(.6 + .4 * Motion.clamp(P.x, 0, 1.2)).toFixed(3)})`;
+      done.style.opacity = Motion.clamp(D.x, 0, 1).toFixed(3);
+      done.style.transform = `translateY(${((1 - D.x) * 12).toFixed(2)}px)`;
+      tick.style.strokeDashoffset = (len * (1 - Motion.clamp(K.x, 0, 1))).toFixed(2);
+    }
+  });
+
+  btn.onclick = () => {
+    if (state !== 'idle') return;
+    state = 'load';
+    const curW = btn.parentElement.clientWidth || 340;
+    W.x = curW; T.t = 0; W.t = 46; P.t = 1;
+    Motion.after(durationSec, () => {
+      state = 'done'; P.t = 0; W.t = 46; G.t = 1; D.t = 1;
+      Motion.after(.14, () => { K.t = 1; });
+      Motion.after(.85, () => {
+        onSuccess(() => {
+          state = 'idle'; D.t = 0; G.t = 0; K.t = 0; W.t = curW;
+          Motion.after(.12, () => { T.t = 1; });
+        });
+      });
+    });
+  };
+}
+
+setupMorphBtn($('guestBtn'), 0.7, reset => {
+  guestDone = true;
+  showStep('plan');
+  reset();
+});
+
+setupMorphBtn($('trialBtn'), 0.9, reset => {
+  trialActive = true;
+  updateModelTag();
+  renderModelMenu();
+  closeGate();
+  Motion.after(.22, () => {
+    if (gateOrigin === 'chat') {
+      if (field.value.trim()) submit();
+      else field.focus();
+    } else {
+      toggleMenu(true);
+    }
+    reset();
+  });
+});
+
+/* ====== Sheld! Sandbox Preview & Code Controller ====== */
+(function initSheldSandbox() {
+  const sid = (() => {
+    try {
+      const k = 'sheld_sandbox_sid_v1';
+      let v = sessionStorage.getItem(k);
+      if (!v) {
+        v = 'sb_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2, 8);
+        sessionStorage.setItem(k, v);
+      }
+      return v;
+    } catch (_) {
+      return 'sb_' + Date.now().toString(36);
+    }
+  })();
+
+  const state = {
+    sessionId: sid,
+    sandboxDir: '',
+    tabs: [], // { path, name, content, kind: 'file'|'preview', pvSrc?, label? }
+    activeTab: '',
+    showWork: false,
+    blobUrls: []
+  };
+
+  const els = {
+    work: $('ideWork'),
+    tabs: $('workTabs'),
+    edWrap: $('edWrap'),
+    pvWrap: $('pvWrap'),
+    edArea: $('codeEditor'),
+    edPath: $('edPathLabel'),
+    edStatus: $('edStatusLabel'),
+    pvFrame: $('pvFrame'),
+    pvUrl: $('pvUrlLabel'),
+    toggleWork: $('toggleWorkBtn')
+  };
+
+  function syncLayout() {
+    els.work.classList.toggle('hidden', !state.showWork);
+    els.toggleWork.classList.toggle('on', state.showWork);
+  }
+
+  function renderTabs() {
+    els.tabs.innerHTML = '';
+    state.tabs.forEach(t => {
+      const btn = document.createElement('div');
+      btn.className = 'wtab' + (state.activeTab === t.path ? ' active' : '');
+      btn.innerHTML = '<span class="wtab-dot"></span><span class="wtab-lbl"></span><button class="wtab-x" type="button" title="Закрыть">✕</button>';
+      btn.querySelector('.wtab-lbl').textContent = t.name;
+      btn.onclick = e => {
+        if (e.target.closest('.wtab-x')) return;
+        state.activeTab = t.path;
+        renderTabs();
+      };
+      btn.querySelector('.wtab-x').onclick = e => {
+        e.stopPropagation();
+        state.tabs = state.tabs.filter(x => x.path !== t.path);
+        if (state.activeTab === t.path) {
+          state.activeTab = state.tabs.length ? state.tabs[state.tabs.length - 1].path : '';
+        }
+        if (!state.tabs.length) state.showWork = false;
+        syncLayout();
+        renderTabs();
+      };
+      els.tabs.appendChild(btn);
+    });
+
+    const cur = state.tabs.find(t => t.path === state.activeTab);
+    if (cur && cur.kind === 'preview') {
+      els.edWrap.classList.add('hidden');
+      els.pvWrap.classList.remove('hidden');
+      if (els.pvFrame.dataset.src !== cur.pvSrc) {
+        els.pvFrame.dataset.src = cur.pvSrc;
+        els.pvFrame.src = cur.pvSrc;
+      }
+      els.pvUrl.textContent = cur.label || 'Превью';
+    } else {
+      els.pvWrap.classList.add('hidden');
+      els.edWrap.classList.remove('hidden');
+      if (cur) {
+        if (els.edArea.value !== cur.content) els.edArea.value = cur.content;
+        els.edPath.textContent = cur.path;
+        els.edStatus.textContent = 'Только просмотр';
+      } else {
+        els.edArea.value = '';
+        els.edPath.textContent = 'Нет открытого файла';
+        els.edStatus.textContent = 'Попроси ИИ создать проект';
+      }
+    }
+  }
+
+  function openGeneratedFile(name, content, wantPreview) {
+    const clean = (name || 'index.html').replace(/\\/g, '/').replace(/^\/+/, '');
+    if (wantPreview) {
+      openPreview(clean, content);
+      return;
+    }
+    const existing = state.tabs.find(t => t.path === clean && t.kind === 'file');
+    if (existing) existing.content = content;
+    else state.tabs.push({ path: clean, name: clean.split('/').pop(), content, kind: 'file' });
+    state.activeTab = clean;
+    state.showWork = true;
+    syncLayout();
+    renderTabs();
+  }
+
+  function openPreview(relPath, rawHtml) {
+    let pvSrc = '';
+    if (state.sandboxDir && relPath) {
+      const clean = relPath.replace(/\\/g, '/').replace(/^\/+/, '');
+      pvSrc = '/preview/' + encodeURI(clean) + '?dir=' + encodeURIComponent(state.sandboxDir) + '&t=' + Date.now();
+    } else if (rawHtml) {
+      let htmlForBlob = String(rawHtml);
+      if (!/<base\s/i.test(htmlForBlob) && /<head[^>]*>/i.test(htmlForBlob)) {
+        htmlForBlob = htmlForBlob.replace(/<head([^>]*)>/i, '<head$1><base href="' + location.origin + '/">');
+      }
+      const url = URL.createObjectURL(new Blob([htmlForBlob], { type: 'text/html' }));
+      state.blobUrls.push(url);
+      pvSrc = url;
+    } else return;
+
+    const pvId = '__preview__';
+    const existing = state.tabs.find(t => t.path === pvId);
+    const label = 'Превью (' + relPath + ')';
+    if (existing) {
+      existing.pvSrc = pvSrc;
+      existing.label = label;
+    } else {
+      state.tabs.push({ path: pvId, name: '▶ Превью', kind: 'preview', pvSrc, label });
+    }
+    state.activeTab = pvId;
+    state.showWork = true;
+    syncLayout();
+    els.pvFrame.dataset.src = '';
+    renderTabs();
+  }
+
+  function onAiResponse(data, files) {
+    if (data && data.workspaceDir) state.sandboxDir = data.workspaceDir;
+    if (!Array.isArray(files) || !files.length) return;
+    for (const f of files) {
+      const clean = String(f.name || '').replace(/\\/g, '/').replace(/^\/+/, '');
+      const existing = state.tabs.find(x => x.path === clean && x.kind === 'file');
+      if (existing) existing.content = f.content;
+      else state.tabs.push({ path: clean, name: clean.split('/').pop(), content: f.content, kind: 'file' });
+    }
+    const htmlFile = files.find(f => /^index\.html?$/i.test(f.name)) || files.find(f => /\.(html|htm)$/i.test(f.name));
+    if (htmlFile) {
+      openPreview(htmlFile.name, htmlFile.content);
+    } else {
+      openGeneratedFile(files[0].name, files[0].content, false);
+    }
+  }
+
+  $('workCloseBtn').onclick = () => { state.showWork = false; syncLayout(); };
+  $('pvReloadBtn').onclick = () => {
+    const cur = state.tabs.find(t => t.path === '__preview__');
+    if (cur && cur.pvSrc) {
+      if (state.sandboxDir) cur.pvSrc = cur.pvSrc.replace(/&t=\d+/, '') + '&t=' + Date.now();
+      els.pvFrame.dataset.src = '';
+      renderTabs();
+    }
+  };
+  $('pvExtBtn').onclick = () => {
+    const cur = state.tabs.find(t => t.path === '__preview__');
+    if (cur && cur.pvSrc) window.open(cur.pvSrc, '_blank');
+  };
+  els.toggleWork.onclick = () => { state.showWork = !state.showWork; syncLayout(); };
+
+  window.SheldIDE = {
+    getChatContext: () => ({
+      sessionId: state.sessionId,
+      activeFile: (state.activeTab && state.activeTab !== '__preview__') ? state.activeTab : null
+    }),
+    refreshTree: () => {},
+    openGeneratedFile,
+    onAiResponse
+  };
+
+  syncLayout();
+})();
+fit();
+field.focus();
+</script>
+</body>
+</html>

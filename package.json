@@ -1,0 +1,39 @@
+{
+  "name": "sheld-ide",
+  "version": "1.0.0",
+  "description": "Sheld! AI Game & Code IDE",
+  "main": "electron-main.js",
+  "scripts": {
+    "dev": "electron .",
+    "start": "electron .",
+    "server": "node server.js",
+    "build:exe": "electron-builder --win portable"
+  },
+  "build": {
+    "appId": "com.sheld.ide",
+    "productName": "Sheld! IDE",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "electron-main.js",
+      "server.js",
+      "index.html",
+      "skills-index.json",
+      "quaternius-catalog.json",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "portable",
+          "arch": ["x64"]
+        }
+      ]
+    }
+  },
+  "devDependencies": {
+    "electron": "^35.0.0",
+    "electron-builder": "^25.1.8"
+  }
+}

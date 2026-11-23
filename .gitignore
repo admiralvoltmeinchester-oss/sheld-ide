@@ -1,0 +1,12 @@
+node_modules/
+dist/
+ai/
+wukong-prototype/
+*.rar
+*.zip
+*.blend
+*.blend1
+_standalone_*
+*.log
+.DS_Store
+Thumbs.db
