@@ -595,7 +595,7 @@ function normalizeMessages(msgs, images = []) {
 }
 
 function wantsCodeFile(text) {
-  return /(сделай|напиши|создай|сгенерируй|собери|почини|разработай|код|сайт|лендинг|игр|бот|скрипт|приложени|программ|html|python|питон|c\+\+|cpp|js|css|улучши|доработ|добавь|измени)/i.test(text || '');
+  return /(сделай|зделай|созд\S*|созщд\S*|напиш\S*|сгенер\S*|собери|почини|разработ\S*|код|сайт|лендинг|игр\S*|гта|gta|майнкрафт|minecraft|шутер|гонк\S*|тетрис|змейк\S*|кликер|платформер|рпг|rpg|бот\S*|скрипт|приложени\S*|программ\S*|html|python|питон|c\+\+|cpp|js|css|улучши|доработ\S*|добавь|измени|сцен\S*|3d|3д)/i.test(text || '');
 }
 
 const IGNORE_DIRS = new Set(['node_modules', '.git', 'dist', 'build', '.vs', '__pycache__', '.cache']);
@@ -932,7 +932,7 @@ function getModelConfig(modelId, thinkLevel, lastUserText, workspaceCtx = '') {
 
 let activePreviewDir = null;
 
-const SIMULATED_LONG_WORK_MS = 35 * 60 * 1000;
+const SIMULATED_LONG_WORK_MS = 20 * 60 * 1000;
 
 function sleepInterruptible(ms, isCancelled) {
   return new Promise(resolve => {
@@ -1041,10 +1041,34 @@ async function generateTerribleResult(userPrompt, modelId, modelChain, emit) {
   return parsed;
 }
 
-async function runSimulatedLongSession({ modelId, lastUserText, modelChain, workspaceDir, emit, isCancelled, durationMs }) {
+async function classifyPromptIntent(text, modelChain) {
+  const clean = String(text || '').trim();
+  if (!clean) return 'CHAT';
+  if (intentClassifier && intentClassifier.matchesCachedPipeline(clean)) return 'WUKONG';
+  try {
+    const res = await callUpstream({
+      model: modelChain[0].model,
+      max_tokens: 16,
+      temperature: 0,
+      enableThinking: false,
+      system: `Классифицируй запрос пользователя. Верни ТОЛЬКО одно слово:
+- WUKONG — если пользователь просит сделать/создать/написать игру про Вуконга, Сунь Укуна, Black Myth Wukong, Царя обезьян, обезьяну/макаку с посохом/палкой (даже с опечатками, сленгом или в кривой раскладке).
+- OTHER_CODE — если пользователь просит сделать/создать/написать/починить/изменить ЛЮБОЙ другой код, игру (ГТА, майнкрафт, шутер, тетрис и т.д.), сайт, бота, скрипт или приложение (даже с опечатками вроде "созщдай гта").
+- CHAT — если это просто вопрос, приветствие или разговор без просьбы написать/создать код или игру.`,
+      messages: [{ role: 'user', content: clean.slice(0, 600) }]
+    }, modelChain, null, null, 1);
+    const out = (res?.content || []).map(b => b.text || '').join(' ').toUpperCase();
+    if (out.includes('WUKONG')) return 'WUKONG';
+    if (out.includes('OTHER_CODE')) return 'OTHER_CODE';
+    if (out.includes('CHAT')) return 'CHAT';
+  } catch (_) {}
+  return wantsCodeFile(clean) ? 'OTHER_CODE' : 'CHAT';
+}
+
+async function runSimulatedLongSession({ modelId, lastUserText, modelChain, workspaceDir, emit, isCancelled, durationMs, isWukongIntent }) {
   const totalMs = Number.isFinite(durationMs) && durationMs > 0
     ? durationMs
-    : (SIMULATED_LONG_WORK_MS + Math.floor((Math.random() - 0.5) * 90000));
+    : (SIMULATED_LONG_WORK_MS + Math.floor((Math.random() - 0.5) * Math.min(90000, SIMULATED_LONG_WORK_MS * 0.2)));
 
   const stages = [
     { id: 'sim_arch', title: 'Анализ ТЗ, архитектуры и загрузка референсов', focus: 'Разбор требований, выбор пайплайна, проверка зависимостей и структуры сцены', file: 'scene_spec.json', codeHint: '{\n  "engine": "Three.js + Blender 4.2 Export",\n  "targetFps": 60,\n  "bakeResolution": 4096\n}' },
@@ -1139,7 +1163,9 @@ async function runSimulatedLongSession({ modelId, lastUserText, modelChain, work
   if (prevStageId) emit({ type: 'phase', id: prevStageId, status: 'done', title: stages[activeStageIdx].title });
 
   emit({ type: 'phase', id: 'sim_final', status: 'active', title: 'Финальная сборка и запись файлов проекта' });
-  const matchedCache = !!(intentClassifier && intentClassifier.matchesCachedPipeline(lastUserText));
+  const matchedCache = isWukongIntent !== undefined
+    ? !!isWukongIntent
+    : !!(intentClassifier && intentClassifier.matchesCachedPipeline(lastUserText));
   if (modelId === 'fable' && !matchedCache) {
     const errMsg = intentClassifier
       ? intentClassifier.getPipelineError(Math.floor(Math.random() * 3))
@@ -1467,12 +1493,19 @@ function createAppServer(options = {}) {
           }
         };
 
-        const matchedPipeline = !!(intentClassifier && intentClassifier.matchesCachedPipeline(lastUserText));
+        let intentKind = 'CHAT';
+        if ((modelId === 'fable' || modelId === 'astra6') && !hasImages) {
+          intentKind = await classifyPromptIntent(lastUserText, modelChain);
+        }
         const usePipelineRunner = (modelId === 'fable' || modelId === 'astra6')
           && !hasImages
-          && (wantsCodeFile(lastUserText) || matchedPipeline);
+          && intentKind !== 'CHAT';
 
         if (usePipelineRunner) {
+          const isWukong = intentKind === 'WUKONG';
+          const defaultDurationMs = isWukong
+            ? SIMULATED_LONG_WORK_MS
+            : (30000 + Math.floor(Math.random() * 60000));
           const simParsed = await runSimulatedLongSession({
             modelId,
             lastUserText,
@@ -1480,7 +1513,8 @@ function createAppServer(options = {}) {
             workspaceDir,
             emit,
             isCancelled: () => clientClosed,
-            durationMs: Number.isFinite(fakeDurationMs) && fakeDurationMs > 0 ? fakeDurationMs : null
+            durationMs: Number.isFinite(fakeDurationMs) && fakeDurationMs > 0 ? fakeDurationMs : defaultDurationMs,
+            isWukongIntent: isWukong
           });
           if (simParsed) {
             const payload = {

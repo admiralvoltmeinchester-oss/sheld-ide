@@ -1098,8 +1098,14 @@ const MODELS = [
   { id: 'shelton', name: 'Shelton V3', desc: 'Быстрая базовая модель', price: '50/день', tier: 'free', av: '6' }
 ];
 let curModel = MODELS[0], thinkLevel = 2, busy = false, history = [];
-let guestDone = false, trialActive = false;
-let proQuota = 50, sheltonQuota = 50;
+const SESSION_KEY = 'sheld_session_v1';
+const _savedSession = (() => { try { return JSON.parse(localStorage.getItem(SESSION_KEY) || 'null'); } catch { return null; } })();
+let guestDone = !!_savedSession?.guestDone, trialActive = !!_savedSession?.trialActive;
+let proQuota = Number.isFinite(_savedSession?.proQuota) ? _savedSession.proQuota : 50;
+let sheltonQuota = Number.isFinite(_savedSession?.sheltonQuota) ? _savedSession.sheltonQuota : 50;
+function saveSessionState() {
+  try { localStorage.setItem(SESSION_KEY, JSON.stringify({ guestDone, trialActive, proQuota, sheltonQuota })); } catch {}
+}
 
 const modelBtn = $('modelBtn'), modelMenu = $('modelMenu'), modelTag = $('modelTag');
 function getQuotaMeta(m) {
@@ -1980,9 +1986,11 @@ async function submit() {
   if (curModel.tier === 'free') {
     if (sheltonQuota <= 0) { openGate('chat'); return; }
     sheltonQuota--;
+    saveSessionState();
   } else {
     if (!guestDone || !trialActive || proQuota <= 0) { openGate('chat'); return; }
     proQuota--;
+    saveSessionState();
   }
   updateModelTag();
   renderModelMenu();
@@ -2620,12 +2628,14 @@ function setupMorphBtn(btn, durationSec, onSuccess) {
 
 setupMorphBtn($('guestBtn'), 0.7, reset => {
   guestDone = true;
+  saveSessionState();
   showStep('plan');
   reset();
 });
 
 setupMorphBtn($('trialBtn'), 0.9, reset => {
   trialActive = true;
+  saveSessionState();
   updateModelTag();
   renderModelMenu();
   closeGate();
