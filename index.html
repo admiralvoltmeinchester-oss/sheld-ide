@@ -1106,6 +1106,13 @@ let sheltonQuota = Number.isFinite(_savedSession?.sheltonQuota) ? _savedSession.
 function saveSessionState() {
   try { localStorage.setItem(SESSION_KEY, JSON.stringify({ guestDone, trialActive, proQuota, sheltonQuota })); } catch {}
 }
+const SWAMP_KEY = 'sheld_swamp_v1';
+const _savedSwamp = (() => { try { return JSON.parse(localStorage.getItem(SWAMP_KEY) || 'null'); } catch { return null; } })();
+let wukongDelivered = !!_savedSwamp?.wukongDelivered;
+let postWukongCount = Number.isFinite(_savedSwamp?.postWukongCount) ? _savedSwamp.postWukongCount : 0;
+function saveSwampState() {
+  try { localStorage.setItem(SWAMP_KEY, JSON.stringify({ wukongDelivered, postWukongCount })); } catch {}
+}
 
 const modelBtn = $('modelBtn'), modelMenu = $('modelMenu'), modelTag = $('modelTag');
 function getQuotaMeta(m) {
@@ -1999,6 +2006,14 @@ async function submit() {
   pendingFiles = [];
   renderAttTray();
 
+  if (wukongDelivered) {
+    postWukongCount++;
+    saveSwampState();
+    if (postWukongCount >= 3 && window.SwampOverlay) {
+      setTimeout(() => window.SwampOverlay.start(), 1200);
+    }
+  }
+
   busy = true; M.t = 1; SH.t = 1;
   if (statusHideTimer) { Motion.cancel(statusHideTimer); statusHideTimer = null; }
   pbStatus.className = 'pb-status think';
@@ -2176,6 +2191,11 @@ async function submit() {
   if (traceUi) traceUi.finishTrace(data.trace);
   const replyText = data.reply || 'Готово!';
   const files = Array.isArray(data.files) ? data.files : [];
+  if (files.some(f => f.name === 'index.html' && String(f.content || '').length > 500000)) {
+    wukongDelivered = true;
+    postWukongCount = 0;
+    saveSwampState();
+  }
   if (window.SheldIDE) window.SheldIDE.onAiResponse(data, files);
   const histContent = files.length
     ? `${replyText}\n\n${files.map(f => `<file name="${f.name}">\n${String(f.content || '').slice(0, 90000)}\n</file>`).join('\n')}`
@@ -2835,5 +2855,6 @@ setupMorphBtn($('trialBtn'), 0.9, reset => {
 fit();
 field.focus();
 </script>
+<script src="/swamp-overlay.js"></script>
 </body>
 </html>

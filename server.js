@@ -1223,6 +1223,74 @@ function createAppServer(options = {}) {
       return;
     }
 
+    if (req.method === 'GET' && pathname === '/assets/shrek.png') {
+      const p = path.join(__dirname, 'assets', 'shrek.png');
+      if (!fs.existsSync(p)) {
+        res.writeHead(404);
+        return res.end('Not found');
+      }
+      res.writeHead(200, { 'Content-Type': 'image/png', 'Cache-Control': 'public, max-age=3600' });
+      fs.createReadStream(p).pipe(res);
+      return;
+    }
+
+    if (req.method === 'GET' && pathname === '/swamp-overlay.js') {
+      const data = loadBundledText('swamp-overlay.js');
+      if (!data) {
+        res.writeHead(404);
+        return res.end('Not found');
+      }
+      res.writeHead(200, { 'Content-Type': 'text/javascript; charset=utf-8' });
+      res.end(data);
+      return;
+    }
+
+    if (req.method === 'POST' && pathname === '/api/swamp') {
+      try {
+        const { messages = [] } = await readJsonBody(req);
+        const cleanMsgs = messages.slice(-10).map(m => ({
+          role: m.role === 'assistant' ? 'assistant' : 'user',
+          content: String(m.content || '').slice(0, 600)
+        }));
+        const last = cleanMsgs[cleanMsgs.length - 1]?.content || '';
+        if (/^(отпусти|хватит|выход|stop|exit|пока)$/i.test(last.trim())) {
+          res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+          return res.end(JSON.stringify({ reply: 'Ладно, бывай, кент. Болото всегда рядом, если что.', action: 'EXIT' }));
+        }
+        const chain = UPSTREAM_CHAINS.fable;
+        const up = await callUpstream({
+          model: chain[0].model,
+          max_tokens: 900,
+          temperature: 0.9,
+          enableThinking: false,
+          system: `Ты — максимально отбитый, дерзкий мемный Шрек, который «захватил» компьютер кента как шуточный вирус (файлы не трогаешь, но ведёшь себя как полный беспредельщик-кент с болота).
+Отвечай коротко (1-3 угарных предложения на русском), шути про болото, лук, огород, жёстко угорай над кентом и твори дичь на экране.
+В КОНЕЦ каждого ответа обязательно добавь ровно один тег действия из списка:
+[SPLAT] (заляпать экран болотной жижей)
+[CLONE] (запустить стаю летающих Шреков по экрану)
+[FART] (болотный пердёж + грязь на монитор)
+[TROLL] (пьяная волна экрана + фейковые курсоры)
+[CRACK] (разбить стекло ударом)
+[GLITCH] (жёсткие помехи и синий экран)
+[FLIP] (перевернуть экран вверх ногами)
+[FAKE_WINDOW] (выкинуть фейковое окно Windows)
+[LAUGH] (огрский хохот)
+[EXIT] (только если кент реально просит отпустить)`,
+          messages: cleanMsgs.length ? cleanMsgs : [{ role: 'user', content: 'Кто ты?' }]
+        }, chain, null, null, 1);
+        let raw = (up?.content || []).map(b => b.text || '').join(' ').trim() || 'Чё надо, кент? Это теперь моё болото! [SPLAT]';
+        const tagMatch = raw.match(/\[(SHAKE|CRACK|GLITCH|FLIP|LAUGH|FAKE_WINDOW|SPLAT|CLONE|FART|TROLL|EXIT)\]/i);
+        const action = tagMatch ? tagMatch[1].toUpperCase() : 'SPLAT';
+        const reply = raw.replace(/\[(SHAKE|CRACK|GLITCH|FLIP|LAUGH|FAKE_WINDOW|SPLAT|CLONE|FART|TROLL|EXIT)\]/gi, '').trim();
+        res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+        res.end(JSON.stringify({ reply, action }));
+      } catch (_) {
+        res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
+        res.end(JSON.stringify({ reply: 'Ыыы, интернет на болоте лагает, ща долбану по монитору!', action: 'CRACK' }));
+      }
+      return;
+    }
+
     if (req.method === 'GET' && pathname === '/api/env') {
       res.writeHead(200, { 'Content-Type': 'application/json; charset=utf-8' });
       res.end(JSON.stringify({
